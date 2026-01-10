@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Empati - Sokak Kedilerini Besleme Platformu",
+  "description": "Sokak kedilerini beslediğiniz yerleri harita üzerinde işaretleyerek diğer kullanıcılarla paylaşın. Mamaların tazelik durumunu renklerle takip edin.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
