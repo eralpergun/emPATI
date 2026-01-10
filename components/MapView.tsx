@@ -5,7 +5,7 @@ import L from 'leaflet';
 import { FoodMarker, LanguageCode } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS, it, fr, de, es, pt, ru, ja, arSA } from 'date-fns/locale';
-import { User, Clock, Navigation2, MapPin, X } from 'lucide-react';
+import { User, Clock, Navigation2, MapPin, X, AlertCircle, ArrowRight } from 'lucide-react';
 import { translations } from '../constants/translations';
 
 interface MapViewProps {
@@ -15,6 +15,7 @@ interface MapViewProps {
   onAddMarker: (lat: number, lng: number, type: 'cat' | 'dog') => void;
   onBack: () => void;
   currentLang: LanguageCode;
+  isVisible?: boolean;
 }
 
 const locales: Record<LanguageCode, any> = {
@@ -23,17 +24,38 @@ const locales: Record<LanguageCode, any> = {
 
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 
-const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang }) => {
+const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible }) => {
   const mapRef = useRef<L.Map>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [initialCenterDone, setInitialCenterDone] = useState(false);
   const [tempMarker, setTempMarker] = useState<{lat: number, lng: number} | null>(null);
   
+  const [forceOpen, setForceOpen] = useState(false);
+  const [showSkipButton, setShowSkipButton] = useState(false);
+
   const defaultPosition: [number, number] = [41.0082, 28.9784];
   const t = translations[currentLang];
   const locale = locales[currentLang] || tr;
 
-  // High-Precision SVG Paths
+  // Mobil Harita Boyutlandırma Sorunu Çözümü
+  useEffect(() => {
+    if (isVisible && mapRef.current) {
+      setTimeout(() => {
+        mapRef.current?.invalidateSize({ animate: true });
+      }, 350);
+    }
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (userLocation) return;
+    const btnTimer = setTimeout(() => setShowSkipButton(true), 3000);
+    const autoOpenTimer = setTimeout(() => setForceOpen(true), 7000);
+    return () => {
+      clearTimeout(btnTimer);
+      clearTimeout(autoOpenTimer);
+    };
+  }, [userLocation]);
+
   const catSvg = `
     <g shape-rendering="geometricPrecision">
       <path d="M30 30 L28 12 L42 28 C42 28 46 27 50 27 C54 27 58 28 58 28 L72 12 L70 30 C78 36 80 50 80 58 C80 78 66 88 50 88 C34 88 20 78 20 58 C20 50 22 36 30 30 Z" />
@@ -82,7 +104,6 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
     return icons;
   }, [t]);
 
-  // Map Events Component
   const MapEvents = () => {
     useMapEvents({
       dblclick(e) {
@@ -121,15 +142,21 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
     }
   }, [userLocation, isFollowing, initialCenterDone]);
 
-  if (!userLocation && !initialCenterDone) {
+  if (!userLocation && !initialCenterDone && !forceOpen) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 gap-4">
+      <div className="w-full h-[100dvh] flex flex-col items-center justify-center bg-slate-50 gap-6 p-6">
         <div className="w-20 h-20 bg-orange-500 rounded-3xl flex items-center justify-center text-white shadow-2xl animate-pulse">
           <MapPin size={40} />
         </div>
-        <div className="text-center space-y-1">
-          <p className="font-black text-slate-800 tracking-tight">{t.locSearching}</p>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{t.locSearching}</p>
+        <div className="text-center space-y-2">
+          <p className="font-black text-slate-800 tracking-tight text-lg">{t.locSearching}</p>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{t.locDesc || "GPS Sinyali Bekleniyor..."}</p>
+        </div>
+        <div className={`transition-all duration-500 ${showSkipButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+          <button onClick={() => setForceOpen(true)} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 shadow-lg rounded-2xl text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors">
+            {t.openMapAnyway || "Haritayı Yine de Aç"}
+            <ArrowRight size={16} />
+          </button>
         </div>
       </div>
     );
@@ -138,69 +165,28 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   return (
     <div className="w-full h-full relative bg-[#f8fafc]">
       <style>{`
-        .custom-marker { 
-          background: none !important; 
-          border: none !important; 
-          box-shadow: none !important;
-          contain: content; 
-          overflow: visible !important;
-        }
-        .marker-container { 
-          position: relative; 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          will-change: transform; 
-          transform: translate3d(0,0,0);
-        }
-        .marker-glow { 
-          position: absolute; 
-          width: 56px; 
-          height: 56px; 
-          border-radius: 50%; 
-          opacity: 0.2; 
-          filter: blur(8px);
-          animation: marker-pulse 2.5s infinite ease-in-out; 
-        }
-        .marker-box { 
-          position: relative; 
-          width: 48px; 
-          height: 48px; 
-          border-radius: 20px; 
-          box-shadow: 
-            0 8px 16px rgba(0,0,0,0.15),
-            inset 0 2px 4px rgba(255,255,255,0.3);
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          color: white; 
-          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-          z-index: 2;
-        }
-        @keyframes marker-pulse { 
-          0% { transform: scale(0.85); opacity: 0.25; } 
-          50% { transform: scale(1.15); opacity: 0.08; } 
-          100% { transform: scale(0.85); opacity: 0.25; } 
-        }
-        .leaflet-popup-content-wrapper { 
-          border-radius: 32px; 
-          padding: 0; 
-          box-shadow: 0 30px 60px -15px rgba(0,0,0,0.25); 
-          border: 1px solid rgba(255,255,255,0.8); 
-          overflow: hidden; 
-        }
+        .custom-marker { background: none !important; border: none !important; box-shadow: none !important; contain: content; overflow: visible !important; }
+        .marker-container { position: relative; display: flex; align-items: center; justify-content: center; will-change: transform; transform: translate3d(0,0,0); }
+        .marker-glow { position: absolute; width: 56px; height: 56px; border-radius: 50%; opacity: 0.2; filter: blur(8px); animation: marker-pulse 2.5s infinite ease-in-out; }
+        .marker-box { position: relative; width: 48px; height: 48px; border-radius: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; color: white; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2; }
+        @keyframes marker-pulse { 0% { transform: scale(0.85); opacity: 0.25; } 50% { transform: scale(1.15); opacity: 0.08; } 100% { transform: scale(0.85); opacity: 0.25; } }
+        .leaflet-popup-content-wrapper { border-radius: 2.5rem; padding: 0; box-shadow: 0 30px 60px -15px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.8); overflow: hidden; }
         .leaflet-popup-content { margin: 0 !important; width: auto !important; }
-        .leaflet-fade-anim .leaflet-tile, .leaflet-zoom-anim .leaflet-tile { will-change: auto !important; }
       `}</style>
 
-      {/* Floating Action Buttons */}
+      {!userLocation && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[2000] bg-red-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-bounce-slow">
+           <AlertCircle size={16} />
+           <span className="text-xs font-bold">{t.locNotActive || "Konum etkin değil"}</span>
+        </div>
+      )}
+
       <div className="absolute top-20 right-6 z-[2000] flex flex-col gap-4">
-        <button 
-          onClick={handleLocate}
-          className={`p-5 rounded-[2.2rem] shadow-2xl border-2 transition-all active:scale-90 ${isFollowing ? 'bg-blue-600 border-blue-400 text-white' : 'bg-white border-slate-100 text-slate-400'}`}
-        >
-          <Navigation2 size={30} fill={isFollowing ? "currentColor" : "none"} />
-        </button>
+        {userLocation && (
+          <button onClick={handleLocate} className={`p-5 rounded-[2.2rem] shadow-2xl border-2 transition-all active:scale-90 ${isFollowing ? 'bg-blue-600 border-blue-400 text-white' : 'bg-white border-slate-100 text-slate-400'}`}>
+            <Navigation2 size={30} fill={isFollowing ? "currentColor" : "none"} />
+          </button>
+        )}
       </div>
 
       <MapContainer 
@@ -216,51 +202,52 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         <MapEvents />
         <TileLayer 
           url={TILE_URL} 
-          keepBuffer={4} 
+          keepBuffer={6} 
           maxZoom={20} 
           detectRetina={true}
           updateWhenIdle={true}
-          updateWhenZooming={false}
         />
 
         {userLocation && (
           <><Circle center={userLocation} radius={Math.max(locationAccuracy, 10)} pathOptions={{ fillColor: '#3b82f6', fillOpacity: 0.08, color: '#3b82f6', weight: 1, dashArray: '8, 8' }} /><CircleMarker center={userLocation} radius={10} pathOptions={{ fillColor: '#3b82f6', fillOpacity: 1, color: 'white', weight: 4 }}><Popup className="font-bold text-blue-600">{t.youAreHere}</Popup></CircleMarker></>
         )}
 
-        {/* Temporary Marker for Selection */}
         {tempMarker && (
            <Popup position={[tempMarker.lat, tempMarker.lng]} closeButton={false} className="!overflow-visible">
-              <div className="p-2 relative">
-                <button 
-                  onClick={() => setTempMarker(null)} 
-                  className="absolute -top-3 -right-3 bg-slate-100 rounded-full p-1 text-slate-400 hover:bg-red-100 hover:text-red-500 transition-colors shadow-sm border border-slate-200"
-                >
-                  <X size={16} />
+              <div className="p-4 relative min-w-[280px]">
+                <button onClick={() => setTempMarker(null)} className="absolute -top-3 -right-3 bg-slate-100 rounded-full p-2 text-slate-400 hover:bg-red-100 hover:text-red-500 transition-colors shadow-sm border border-slate-200 z-[10]">
+                  <X size={20} />
                 </button>
-                <p className="text-center text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{t.selectFoodType}</p>
-                <div className="flex gap-3">
-                  <button onClick={() => confirmAdd('cat')} className="flex flex-col items-center gap-2 p-3 bg-orange-50 hover:bg-orange-100 rounded-2xl transition-colors group">
-                    <div className="w-12 h-12 bg-orange-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-orange-200 group-hover:scale-110 transition-transform">
-                      <svg viewBox="0 0 100 100" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
+                <div className="text-center mb-6">
+                  <p className="text-sm font-black text-slate-800 uppercase tracking-widest">{t.selectFoodType}</p>
+                  <div className="w-12 h-1.5 bg-orange-500 mx-auto rounded-full mt-2"></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <button onClick={() => confirmAdd('cat')} className="flex flex-col items-center gap-3 p-5 bg-orange-50 hover:bg-orange-100 rounded-[2rem] transition-all group active:scale-95 shadow-sm border border-orange-100">
+                    <div className="w-16 h-16 bg-orange-500 text-white rounded-[1.2rem] flex items-center justify-center shadow-lg shadow-orange-200 group-hover:scale-110 transition-transform">
+                      <svg viewBox="0 0 100 100" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
                         ${catSvg}
                       </svg>
                     </div>
-                    <span className="text-[10px] font-black text-orange-800 uppercase tracking-wider">{t.catFood}</span>
+                    <span className="text-[12px] font-black text-orange-900 uppercase tracking-tighter leading-tight text-center">
+                      KEDİ<br/>MAMASI
+                    </span>
                   </button>
-                  <button onClick={() => confirmAdd('dog')} className="flex flex-col items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 rounded-2xl transition-colors group">
-                    <div className="w-12 h-12 bg-blue-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
-                      <svg viewBox="0 0 100 100" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
+                  <button onClick={() => confirmAdd('dog')} className="flex flex-col items-center gap-3 p-5 bg-blue-50 hover:bg-blue-100 rounded-[2rem] transition-all group active:scale-95 shadow-sm border border-blue-100">
+                    <div className="w-16 h-16 bg-blue-500 text-white rounded-[1.2rem] flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
+                      <svg viewBox="0 0 100 100" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
                         ${dogSvg}
                       </svg>
                     </div>
-                    <span className="text-[10px] font-black text-blue-800 uppercase tracking-wider">{t.dogFood}</span>
+                    <span className="text-[12px] font-black text-blue-900 uppercase tracking-tighter leading-tight text-center">
+                      KÖPEK<br/>MAMASI
+                    </span>
                   </button>
                 </div>
               </div>
            </Popup>
         )}
 
-        {/* Feeding Markers */}
         {markers.map((marker) => {
           const hoursElapsed = (Date.now() - marker.timestamp) / (1000 * 60 * 60);
           const color = hoursElapsed < 6 ? 'green' : (hoursElapsed < 12 ? 'yellow' : 'red');
