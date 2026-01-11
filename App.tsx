@@ -52,8 +52,8 @@ const App: React.FC = () => {
 
     const geoOptions: PositionOptions = {
       enableHighAccuracy: true,
-      timeout: 10000, 
-      maximumAge: 10000 
+      timeout: 15000, 
+      maximumAge: 5000 
     };
 
     const handleSuccess = (pos: GeolocationPosition) => {
@@ -71,21 +71,20 @@ const App: React.FC = () => {
       setLocationAccuracy(accuracy);
 
       if (accuracy > 50) {
-        setLocationStatus('error');
-      } else if (accuracy < 20) {
-        setLocationStatus('precise');
-      } else {
         setLocationStatus('approximate');
+      } else {
+        setLocationStatus('precise');
       }
     };
 
     const handleError = (err: GeolocationPositionError) => {
       if (err.code === err.PERMISSION_DENIED) setLocationStatus('denied');
       else {
+        // Retry with lower accuracy if needed
         navigator.geolocation.getCurrentPosition(
           handleSuccess,
           () => setLocationStatus('error'),
-          { enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 }
+          { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
         );
       }
     };
@@ -108,19 +107,21 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isConfigured || !db) return;
 
+    // Use onSnapshot with includeMetadataChanges to handle offline state
     const q = query(collection(db, "markers"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (querySnapshot) => {
       const loadedMarkers: FoodMarker[] = [];
       const now = Date.now();
       querySnapshot.forEach((doc) => {
         const data = doc.data() as FoodMarker;
+        // Keep only markers from last 24h
         if (now - data.timestamp < 24 * 60 * 60 * 1000) {
-           loadedMarkers.push(data);
+           loadedMarkers.push({ ...data, id: doc.id });
         }
       });
       setMarkers(loadedMarkers);
     }, (error) => {
-      console.error("Veri çekme hatası:", error);
+      console.error("Firestore connectivity issue:", error);
     });
     return () => unsubscribe();
   }, []);
@@ -162,11 +163,10 @@ const App: React.FC = () => {
     localStorage.setItem('empati_lang', lang);
   };
 
-  const addMarker = async (lat: number, lng: number, type: 'cat' | 'dog') => {
+  const addMarker = async (lat: number, lng: number, type: 'cat' | 'dog' | 'both') => {
     if (!user) return;
     
-    const newMarker: FoodMarker = {
-      id: Math.random().toString(36).substr(2, 9),
+    const newMarker: Omit<FoodMarker, 'id'> = {
       lat,
       lng,
       addedBy: user.name,
@@ -177,12 +177,12 @@ const App: React.FC = () => {
     if (isConfigured && db) {
       try {
         await addDoc(collection(db, "markers"), newMarker);
+        // Firestore with persistence will handle offline sync automatically
       } catch (e) {
         console.error("Ekleme hatası: ", e);
-        alert("Bağlantı hatası! Mama eklenemedi.");
       }
     } else {
-      setMarkers(prev => [...prev, newMarker]);
+      setMarkers(prev => [...prev, { ...newMarker, id: Math.random().toString() }]);
     }
   };
 

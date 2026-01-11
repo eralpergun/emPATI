@@ -1,6 +1,15 @@
 
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { 
+  initializeFirestore, 
+  enableIndexedDbPersistence, 
+  collection, 
+  addDoc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  limit 
+} from "firebase/firestore";
 
 // Firebase yapılandırması
 const firebaseConfig = {
@@ -13,7 +22,6 @@ const firebaseConfig = {
   measurementId: "G-4LNLQNYYMR"
 };
 
-// Config kontrolü: Eğer apiKey boş değilse ve varsayılan değer değilse true döner
 const isConfigured = firebaseConfig.apiKey && firebaseConfig.apiKey.length > 0 && firebaseConfig.apiKey !== "YOUR-API-KEY-HERE";
 
 let db: any;
@@ -21,7 +29,20 @@ let db: any;
 if (isConfigured) {
   try {
     const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
+    // Connection issues often stem from WebSockets being blocked. 
+    // experimentalForceLongPolling can solve "Could not reach Cloud Firestore backend" errors.
+    db = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    });
+
+    // Enable offline persistence for better UX when connection is lost
+    enableIndexedDbPersistence(db).catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.warn("Persistence failed: multiple tabs open");
+      } else if (err.code === 'unimplemented') {
+        console.warn("Persistence not supported by browser");
+      }
+    });
   } catch (error) {
     console.error("Firebase başlatma hatası:", error);
   }

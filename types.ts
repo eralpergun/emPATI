@@ -9,7 +9,7 @@ export interface FoodMarker {
   lng: number;
   addedBy: string;
   timestamp: number;
-  type: 'cat' | 'dog';
+  type: 'cat' | 'dog' | 'both';
 }
 
 export interface ShopLocation {

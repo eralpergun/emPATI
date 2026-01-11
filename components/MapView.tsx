@@ -5,14 +5,14 @@ import L from 'leaflet';
 import { FoodMarker, LanguageCode } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS, it, fr, de, es, pt, ru, ja, arSA } from 'date-fns/locale';
-import { User, Clock, Navigation2, MapPin, X, AlertCircle, ArrowRight } from 'lucide-react';
+import { User, Clock, Navigation2, MapPin, AlertCircle, ArrowRight } from 'lucide-react';
 import { translations } from '../constants/translations';
 
 interface MapViewProps {
   markers: FoodMarker[];
   userLocation: [number, number] | null;
   locationAccuracy: number;
-  onAddMarker: (lat: number, lng: number, type: 'cat' | 'dog') => void;
+  onAddMarker: (lat: number, lng: number, type: 'cat' | 'dog' | 'both') => void;
   onBack: () => void;
   currentLang: LanguageCode;
   isVisible?: boolean;
@@ -28,7 +28,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const mapRef = useRef<L.Map>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [initialCenterDone, setInitialCenterDone] = useState(false);
-  const [tempMarker, setTempMarker] = useState<{lat: number, lng: number} | null>(null);
+  const [activeType, setActiveType] = useState<'cat' | 'dog'>('cat');
   
   const [forceOpen, setForceOpen] = useState(false);
   const [showSkipButton, setShowSkipButton] = useState(false);
@@ -40,9 +40,10 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   // Mobil Harita Boyutlandırma Sorunu Çözümü
   useEffect(() => {
     if (isVisible && mapRef.current) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         mapRef.current?.invalidateSize({ animate: true });
-      }, 350);
+      }, 400); 
+      return () => clearTimeout(timer);
     }
   }, [isVisible]);
 
@@ -56,41 +57,42 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
     };
   }, [userLocation]);
 
+  // Minimalist Cat Logo
   const catSvg = `
     <g shape-rendering="geometricPrecision">
-      <path d="M30 30 L28 12 L42 28 C42 28 46 27 50 27 C54 27 58 28 58 28 L72 12 L70 30 C78 36 80 50 80 58 C80 78 66 88 50 88 C34 88 20 78 20 58 C20 50 22 36 30 30 Z" />
-      <path d="M38 52 A4 4 0 1 0 46 52 A4 4 0 1 0 38 52 Z M54 52 A4 4 0 1 0 62 52 A4 4 0 1 0 54 52 Z" fill="currentColor" stroke="none" />
-      <path d="M47 64 L50 67 L53 64" fill="currentColor" stroke="none" />
-      <path d="M44 72 C44 78 50 78 50 78 C50 78 56 78 56 72" />
-      <path d="M24 62 H12 M24 68 H12 M24 74 L14 80" />
-      <path d="M76 62 H88 M76 68 H88 M76 74 L86 80" />
+      <path d="M30 40 L28 15 L45 35 C45 35 48 33 50 33 C52 33 55 35 55 35 L72 15 L70 40 C75 45 78 55 78 65 C78 85 65 95 50 95 C35 95 22 85 22 65 C22 55 25 45 30 40 Z" fill="none" stroke="currentColor" stroke-width="3" />
+      <path d="M38 58 A4.5 3 0 1 0 47 58 A4.5 3 0 1 0 38 58 Z M53 58 A4.5 3 0 1 0 62 58 A4.5 3 0 1 0 53 58 Z" fill="none" stroke="currentColor" stroke-width="2.5" />
+      <path d="M25 65 Q18 65 12 65 M25 72 Q18 78 12 85 M25 58 Q18 52 12 45" stroke="currentColor" stroke-width="2.5" />
+      <path d="M75 65 Q82 65 88 65 M75 72 Q82 78 88 85 M75 58 Q82 52 88 45" stroke="currentColor" stroke-width="2.5" />
     </g>
   `;
 
+  // Minimalist Dog Logo
   const dogSvg = `
     <g shape-rendering="geometricPrecision">
-      <path d="M32 35 L28 10 L44 30 M68 35 L72 10 L56 30" />
-      <path d="M32 35 C32 35 25 42 25 65 C25 88 35 95 50 95 C65 95 75 88 75 65 C75 42 68 35 68 35" />
-      <path d="M38 28 C38 28 45 32 50 32 C55 32 62 28 62 28" />
-      <circle cx="42" cy="55" r="4.5" fill="currentColor" stroke="none" />
-      <circle cx="58" cy="55" r="4.5" fill="currentColor" stroke="none" />
-      <path d="M46 72 Q50 68 54 72" />
-      <path d="M42 78 Q50 88 58 78" />
+      <path d="M35 45 L32 15 Q40 30 48 42 M65 45 L68 15 Q60 30 52 42" fill="none" stroke="currentColor" stroke-width="3" />
+      <path d="M32 15 L38 22 Q42 35 48 42 M68 15 L62 22 Q58 35 52 42" fill="none" stroke="currentColor" stroke-width="2" />
+      <path d="M35 45 C35 45 28 52 28 75 C28 98 38 105 50 105 C62 105 72 98 72 75 C72 52 65 45 65 45" fill="none" stroke="currentColor" stroke-width="3" />
+      <circle cx="43" cy="65" r="4" fill="none" stroke="currentColor" stroke-width="2.5" />
+      <circle cx="57" cy="65" r="4" fill="none" stroke="currentColor" stroke-width="2.5" />
+      <path d="M46 80 Q50 75 54 80 Q50 85 46 80" fill="currentColor" />
+      <path d="M42 88 Q50 95 58 88" stroke="currentColor" stroke-width="2" fill="none" />
     </g>
   `;
 
   const markerIcons = useMemo(() => {
     const states = { green: '#10b981', yellow: '#f59e0b', red: '#ef4444' };
     const icons: any = {};
-    ['cat', 'dog'].forEach(type => {
+    ['cat', 'dog', 'both'].forEach(type => {
       Object.entries(states).forEach(([status, color]) => {
+        const svgContent = type === 'cat' ? catSvg : type === 'dog' ? dogSvg : `<path d="M20 50 Q50 20 80 50 Q50 80 20 50" stroke-width="6"/><circle cx="50" cy="50" r="15" fill="white" stroke="none"/>`;
         icons[`${status}-${type}`] = L.divIcon({
           html: `
             <div class="marker-container">
               <div class="marker-glow" style="background-color: ${color}"></div>
               <div class="marker-box" style="background-color: ${color}">
                 <svg viewBox="0 0 100 100" width="34" height="34" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
-                  ${type === 'cat' ? catSvg : dogSvg}
+                  ${type === 'both' ? `<g transform="translate(0, 10)">${catSvg}</g><g transform="translate(30, 0) scale(0.6)">${dogSvg}</g>` : svgContent}
                 </svg>
               </div>
             </div>`,
@@ -107,7 +109,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const MapEvents = () => {
     useMapEvents({
       dblclick(e) {
-        setTempMarker({ lat: e.latlng.lat, lng: e.latlng.lng });
+        onAddMarker(e.latlng.lat, e.latlng.lng, activeType);
       },
       dragstart() {
         setIsFollowing(false);
@@ -122,13 +124,6 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
       mapRef.current.setView(userLocation, 18, { animate: true });
     }
   }, [userLocation]);
-
-  const confirmAdd = (type: 'cat' | 'dog') => {
-    if (tempMarker) {
-      onAddMarker(tempMarker.lat, tempMarker.lng, type);
-      setTempMarker(null);
-    }
-  };
 
   useEffect(() => {
     if (userLocation && mapRef.current) {
@@ -174,6 +169,28 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         .leaflet-popup-content { margin: 0 !important; width: auto !important; }
       `}</style>
 
+      {/* Bottom Selection Buttons */}
+      <div className="absolute bottom-28 left-0 right-0 z-[1000] px-6 flex items-center justify-center gap-4 pointer-events-none">
+         <button 
+           onClick={() => setActiveType('cat')} 
+           className={`pointer-events-auto flex-1 p-4 rounded-3xl shadow-xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 border-b-4 ${activeType === 'cat' ? 'bg-orange-600 border-orange-800 text-white scale-105 shadow-orange-500/50' : 'bg-white border-slate-200 text-slate-400 opacity-90 hover:opacity-100 hover:bg-slate-50'}`}
+         >
+             <div className="w-8 h-8 transition-colors">
+                <svg viewBox="0 0 100 110" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: catSvg }} />
+             </div>
+             <span className={`font-black uppercase tracking-wider text-sm ${activeType === 'cat' ? 'text-white' : 'text-slate-500'}`}>{t.catFood}</span>
+         </button>
+         <button 
+           onClick={() => setActiveType('dog')} 
+           className={`pointer-events-auto flex-1 p-4 rounded-3xl shadow-xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 border-b-4 ${activeType === 'dog' ? 'bg-blue-600 border-blue-800 text-white scale-105 shadow-blue-500/50' : 'bg-white border-slate-200 text-slate-400 opacity-90 hover:opacity-100 hover:bg-slate-50'}`}
+         >
+             <div className="w-8 h-8 transition-colors">
+                <svg viewBox="0 0 100 110" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: dogSvg }} />
+             </div>
+             <span className={`font-black uppercase tracking-wider text-sm ${activeType === 'dog' ? 'text-white' : 'text-slate-500'}`}>{t.dogFood}</span>
+         </button>
+      </div>
+
       {!userLocation && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[2000] bg-red-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-bounce-slow">
            <AlertCircle size={16} />
@@ -212,50 +229,15 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           <><Circle center={userLocation} radius={Math.max(locationAccuracy, 10)} pathOptions={{ fillColor: '#3b82f6', fillOpacity: 0.08, color: '#3b82f6', weight: 1, dashArray: '8, 8' }} /><CircleMarker center={userLocation} radius={10} pathOptions={{ fillColor: '#3b82f6', fillOpacity: 1, color: 'white', weight: 4 }}><Popup className="font-bold text-blue-600">{t.youAreHere}</Popup></CircleMarker></>
         )}
 
-        {tempMarker && (
-           <Popup position={[tempMarker.lat, tempMarker.lng]} closeButton={false} className="!overflow-visible">
-              <div className="p-4 relative min-w-[280px]">
-                <button onClick={() => setTempMarker(null)} className="absolute -top-3 -right-3 bg-slate-100 rounded-full p-2 text-slate-400 hover:bg-red-100 hover:text-red-500 transition-colors shadow-sm border border-slate-200 z-[10]">
-                  <X size={20} />
-                </button>
-                <div className="text-center mb-6">
-                  <p className="text-sm font-black text-slate-800 uppercase tracking-widest">{t.selectFoodType}</p>
-                  <div className="w-12 h-1.5 bg-orange-500 mx-auto rounded-full mt-2"></div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <button onClick={() => confirmAdd('cat')} className="flex flex-col items-center gap-3 p-5 bg-orange-50 hover:bg-orange-100 rounded-[2rem] transition-all group active:scale-95 shadow-sm border border-orange-100">
-                    <div className="w-16 h-16 bg-orange-500 text-white rounded-[1.2rem] flex items-center justify-center shadow-lg shadow-orange-200 group-hover:scale-110 transition-transform">
-                      <svg viewBox="0 0 100 100" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
-                        ${catSvg}
-                      </svg>
-                    </div>
-                    <span className="text-[12px] font-black text-orange-900 uppercase tracking-tighter leading-tight text-center">
-                      KEDİ<br/>MAMASI
-                    </span>
-                  </button>
-                  <button onClick={() => confirmAdd('dog')} className="flex flex-col items-center gap-3 p-5 bg-blue-50 hover:bg-blue-100 rounded-[2rem] transition-all group active:scale-95 shadow-sm border border-blue-100">
-                    <div className="w-16 h-16 bg-blue-500 text-white rounded-[1.2rem] flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
-                      <svg viewBox="0 0 100 100" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
-                        ${dogSvg}
-                      </svg>
-                    </div>
-                    <span className="text-[12px] font-black text-blue-900 uppercase tracking-tighter leading-tight text-center">
-                      KÖPEK<br/>MAMASI
-                    </span>
-                  </button>
-                </div>
-              </div>
-           </Popup>
-        )}
-
         {markers.map((marker) => {
           const hoursElapsed = (Date.now() - marker.timestamp) / (1000 * 60 * 60);
           const color = hoursElapsed < 6 ? 'green' : (hoursElapsed < 12 ? 'yellow' : 'red');
           const timeLabel = formatDistanceToNow(marker.timestamp, { addSuffix: true, locale } as any);
+          const typeLabel = marker.type === 'cat' ? t.catFood : marker.type === 'dog' ? t.dogFood : t.bothFood;
           const iconKey = `${color}-${marker.type || 'cat'}`;
           return (
             <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={markerIcons[iconKey]}>
-              <Popup><div className="p-6 min-w-[240px]"><div className="flex items-center gap-5 mb-5 border-b pb-5"><div className="w-14 h-14 bg-slate-50 rounded-[1.2rem] flex items-center justify-center text-slate-400"><User size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p><p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p></div></div><div className="flex items-center gap-5"><div className="w-14 h-14 bg-slate-50 rounded-[1.2rem] flex items-center justify-center text-slate-400"><Clock size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.time}</p><p className="text-sm font-bold text-slate-600 leading-none">{timeLabel}</p></div></div><div className="mt-6 pt-5 border-t flex items-center justify-between"><div className="flex items-center gap-3"><div className={`w-3 h-3 rounded-full animate-pulse ${color === 'green' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : (color === 'yellow' ? 'bg-amber-500 shadow-[0_0_10px_#f59e0b]' : 'bg-red-500 shadow-[0_0_10px_#ef4444]')}`} /><span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{marker.type === 'cat' ? t.catFood : t.dogFood}</span></div></div></div></Popup>
+              <Popup><div className="p-6 min-w-[240px]"><div className="flex items-center gap-5 mb-5 border-b pb-5"><div className="w-14 h-14 bg-slate-50 rounded-[1.2rem] flex items-center justify-center text-slate-400"><User size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p><p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p></div></div><div className="flex items-center gap-5"><div className="w-14 h-14 bg-slate-50 rounded-[1.2rem] flex items-center justify-center text-slate-400"><Clock size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.time}</p><p className="text-sm font-bold text-slate-600 leading-none">{timeLabel}</p></div></div><div className="mt-6 pt-5 border-t flex items-center justify-between"><div className="flex items-center gap-3"><div className={`w-3 h-3 rounded-full animate-pulse ${color === 'green' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : (color === 'yellow' ? 'bg-amber-500 shadow-[0_0_10px_#f59e0b]' : 'bg-red-500 shadow-[0_0_10px_#ef4444]')}`} /><span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span></div></div></div></Popup>
             </Marker>
           );
         })}
