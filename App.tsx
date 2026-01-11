@@ -22,8 +22,6 @@ const App: React.FC = () => {
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
   const [language, setLanguage] = useState<LanguageCode>('tr');
 
-  const lastRawLocation = useRef<{lat: number, lng: number, accuracy: number} | null>(null);
-
   const t = translations[language];
 
   const resolveName = (name: string) => {
@@ -50,69 +48,65 @@ const App: React.FC = () => {
       return;
     }
 
-    // Konum hassasiyeti için kritik ayarlar
     const geoOptions: PositionOptions = {
-      enableHighAccuracy: true, // GPS donanımını zorla
-      timeout: 25000,           // Uydu kilidi için daha fazla zaman tanı (25sn)
-      maximumAge: 0             // ASLA önbellekten (cache) konum getirme, hep taze veri iste
+      enableHighAccuracy: true,
+      timeout: 15000, 
+      maximumAge: 0 
     };
 
     const handleSuccess = (pos: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = pos.coords;
       
-      // Filtreleme Mantığı:
-      // 1. Eğer gelen veri çok kötüyse (>2km) ve zaten bir konumumuz varsa, güncelleme.
-      if (accuracy > 2000 && lastRawLocation.current !== null) return;
+      // 1. Aşırı büyük hataları (baz istasyonu verisi gibi 5km+) direkt yoksay
+      if (accuracy > 5000) return;
 
-      // 2. Eğer elimizde zaten çok hassas bir konum varsa (<20m) ve yeni gelen veri kötüyse (>50m), 
-      // bu muhtemelen GPS sinyali kaybı sonucu WiFi bazlı sapmadır. Yoksay.
-      if (lastRawLocation.current && lastRawLocation.current.accuracy < 20 && accuracy > 50) {
-        return;
-      }
-      
-      // 3. Mesafe ve Hassasiyet kontrolü:
-      if (lastRawLocation.current) {
-        const distMoved = calculateDistance(latitude, longitude, lastRawLocation.current.lat, lastRawLocation.current.lng);
-        // Çok küçük hareketleri (titremeleri) engelle, ama hassasiyet arttıysa güncelle.
-        if (distMoved < 3 && accuracy >= lastRawLocation.current.accuracy) return;
-      }
-      
-      lastRawLocation.current = { lat: latitude, lng: longitude, accuracy };
-      setUserLocation([latitude, longitude]);
-      setLocationAccuracy(accuracy);
+      setUserLocation(prevLoc => {
+        // İlk konum ise direkt kabul et
+        if (!prevLoc) {
+          setLocationAccuracy(accuracy);
+          setLocationStatus(accuracy < 40 ? 'precise' : 'approximate');
+          return [latitude, longitude];
+        }
 
-      if (accuracy > 60) {
-        setLocationStatus('approximate');
-      } else {
-        setLocationStatus('precise');
-      }
+        const dist = calculateDistance(latitude, longitude, prevLoc[0], prevLoc[1]);
+
+        // YENİ VE DAHA HIZLI MANTIK:
+        // 1. Yeni veri çok daha kaliteliyse (daha küçük accuracy) -> Kesin güncelle.
+        // 2. Hareket edildiyse (> 10m) -> Kesin güncelle (Eski konumda takılmayı önler).
+        // 3. Çok az hareket varsa (< 5m) VE yeni veri eskisinden daha kötü veya aynıysa -> Güncelleme (Jitter/Titreme önleme).
+        
+        // Bu mantık kullanıcının yürüdüğünü (mesafe > 10m) algıladığı an, sinyal kalitesi biraz düşse bile konumu günceller.
+        // Böylece "konum yanlış yerde kaldı" sorunu çözülür.
+
+        if (accuracy <= locationAccuracy || dist > 10) {
+          setLocationAccuracy(accuracy);
+          setLocationStatus(accuracy < 40 ? 'precise' : 'approximate');
+          return [latitude, longitude];
+        }
+
+        // Yukarıdaki şartlar sağlanmadıysa (duruyoruz ve sinyal kötü), eski konumu koru (titremeyi engelle)
+        return prevLoc;
+      });
     };
 
     const handleError = (err: GeolocationPositionError) => {
       console.warn("Konum hatası:", err.message);
       if (err.code === err.PERMISSION_DENIED) setLocationStatus('denied');
       else {
-        // Hata durumunda (timeout vb.) düşük hassasiyetle tekrar dene ama kullanıcıya hissettirme
-        // Bu sadece fallback içindir.
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-             // Sadece elimizde hiç konum yoksa bunu kullan
-             if (!lastRawLocation.current) handleSuccess(pos);
-          },
-          () => setLocationStatus('error'),
-          { enableHighAccuracy: false, timeout: 30000, maximumAge: 0 }
-        );
+        // Watcher hata verirse tek seferlik deneme yap
+        navigator.geolocation.getCurrentPosition(handleSuccess, () => setLocationStatus('error'), {
+           enableHighAccuracy: true,
+           timeout: 10000,
+           maximumAge: 0
+        });
       }
     };
 
-    // İlk konumu al
-    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, geoOptions);
-    
-    // Konumu izle
+    // Watcher başlat
     const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, geoOptions);
     
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+  }, [locationAccuracy]); // locationAccuracy değişimi dependency olarak eklendi ki logic güncel kalsın
 
   useEffect(() => {
     const savedUser = localStorage.getItem('empati_user');
@@ -127,7 +121,6 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isConfigured || !db) return;
 
-    // Use onSnapshot with includeMetadataChanges to handle offline state
     const q = query(collection(db, "markers"));
     const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (querySnapshot) => {
       const loadedMarkers: FoodMarker[] = [];
@@ -197,7 +190,6 @@ const App: React.FC = () => {
     if (isConfigured && db) {
       try {
         await addDoc(collection(db, "markers"), newMarker);
-        // Firestore with persistence will handle offline sync automatically
       } catch (e) {
         console.error("Ekleme hatası: ", e);
       }
