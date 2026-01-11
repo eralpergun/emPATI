@@ -22,8 +22,10 @@ const locales: Record<LanguageCode, any> = {
   tr, en: enUS, it, fr, de, es, pt, ru, jp: ja, ar: arSA
 };
 
-// CartoDB Voyager: Bina detayları, net cadde isimleri, hızlı yüklenme, modern görünüm.
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+
+const CAT_PNG = "https://cdn-icons-png.flaticon.com/512/616/616430.png";
+const DOG_PNG = "https://cdn-icons-png.flaticon.com/512/616/616554.png";
 
 const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible }) => {
   const mapRef = useRef<L.Map>(null);
@@ -38,7 +40,6 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const t = translations[currentLang];
   const locale = locales[currentLang] || tr;
 
-  // Mobil Harita Boyutlandırma Sorunu Çözümü
   useEffect(() => {
     if (isVisible && mapRef.current) {
       const timer = setTimeout(() => {
@@ -58,43 +59,32 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
     };
   }, [userLocation]);
 
-  // Minimalist Cat Logo
-  const catSvg = `
-    <g shape-rendering="geometricPrecision">
-      <path d="M30 40 L28 15 L45 35 C45 35 48 33 50 33 C52 33 55 35 55 35 L72 15 L70 40 C75 45 78 55 78 65 C78 85 65 95 50 95 C35 95 22 85 22 65 C22 55 25 45 30 40 Z" fill="none" stroke="currentColor" stroke-width="3" />
-      <path d="M38 58 A4.5 3 0 1 0 47 58 A4.5 3 0 1 0 38 58 Z M53 58 A4.5 3 0 1 0 62 58 A4.5 3 0 1 0 53 58 Z" fill="none" stroke="currentColor" stroke-width="2.5" />
-      <path d="M25 65 Q18 65 12 65 M25 72 Q18 78 12 85 M25 58 Q18 52 12 45" stroke="currentColor" stroke-width="2.5" />
-      <path d="M75 65 Q82 65 88 65 M75 72 Q82 78 88 85 M75 58 Q82 52 88 45" stroke="currentColor" stroke-width="2.5" />
-    </g>
-  `;
-
-  // Minimalist Dog Logo
-  const dogSvg = `
-    <g shape-rendering="geometricPrecision">
-      <path d="M35 45 L32 15 Q40 30 48 42 M65 45 L68 15 Q60 30 52 42" fill="none" stroke="currentColor" stroke-width="3" />
-      <path d="M32 15 L38 22 Q42 35 48 42 M68 15 L62 22 Q58 35 52 42" fill="none" stroke="currentColor" stroke-width="2" />
-      <path d="M35 45 C35 45 28 52 28 75 C28 98 38 105 50 105 C62 105 72 98 72 75 C72 52 65 45 65 45" fill="none" stroke="currentColor" stroke-width="3" />
-      <circle cx="43" cy="65" r="4" fill="none" stroke="currentColor" stroke-width="2.5" />
-      <circle cx="57" cy="65" r="4" fill="none" stroke="currentColor" stroke-width="2.5" />
-      <path d="M46 80 Q50 75 54 80 Q50 85 46 80" fill="currentColor" />
-      <path d="M42 88 Q50 95 58 88" stroke="currentColor" stroke-width="2" fill="none" />
-    </g>
-  `;
-
   const markerIcons = useMemo(() => {
     const states = { green: '#10b981', yellow: '#f59e0b', red: '#ef4444' };
     const icons: any = {};
     ['cat', 'dog', 'both'].forEach(type => {
       Object.entries(states).forEach(([status, color]) => {
-        const svgContent = type === 'cat' ? catSvg : type === 'dog' ? dogSvg : `<path d="M20 50 Q50 20 80 50 Q50 80 20 50" stroke-width="6"/><circle cx="50" cy="50" r="15" fill="white" stroke="none"/>`;
+        
+        let contentHtml = '';
+        if (type === 'cat') {
+          contentHtml = `<img src="${CAT_PNG}" class="w-8 h-8 object-contain drop-shadow-sm filter-enhanced" />`;
+        } else if (type === 'dog') {
+          contentHtml = `<img src="${DOG_PNG}" class="w-8 h-8 object-contain drop-shadow-sm filter-enhanced" />`;
+        } else {
+          contentHtml = `
+            <div class="flex items-center justify-center -space-x-1">
+               <img src="${CAT_PNG}" class="w-5 h-5 object-contain drop-shadow-sm" />
+               <img src="${DOG_PNG}" class="w-5 h-5 object-contain drop-shadow-sm" />
+            </div>
+          `;
+        }
+        
         icons[`${status}-${type}`] = L.divIcon({
           html: `
             <div class="marker-container">
-              <div class="marker-glow" style="background-color: ${color}"></div>
-              <div class="marker-box" style="background-color: ${color}">
-                <svg viewBox="0 0 100 100" width="34" height="34" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
-                  ${type === 'both' ? `<g transform="translate(0, 10)">${catSvg}</g><g transform="translate(30, 0) scale(0.6)">${dogSvg}</g>` : svgContent}
-                </svg>
+              <div class="marker-halo" style="background-color: ${color}; box-shadow: 0 0 30px ${color};"></div>
+              <div class="marker-box">
+                ${contentHtml}
               </div>
             </div>`,
           className: 'custom-marker', 
@@ -163,21 +153,50 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
       <style>{`
         .custom-marker { background: none !important; border: none !important; box-shadow: none !important; contain: content; overflow: visible !important; }
         .marker-container { position: relative; display: flex; align-items: center; justify-content: center; will-change: transform; transform: translate3d(0,0,0); }
-        .marker-glow { position: absolute; width: 56px; height: 56px; border-radius: 50%; opacity: 0.2; filter: blur(8px); animation: marker-pulse 2.5s infinite ease-in-out; }
-        .marker-box { position: relative; width: 48px; height: 48px; border-radius: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; color: white; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2; }
-        @keyframes marker-pulse { 0% { transform: scale(0.85); opacity: 0.25; } 50% { transform: scale(1.15); opacity: 0.08; } 100% { transform: scale(0.85); opacity: 0.25; } }
+        
+        @keyframes marker-pulse {
+          0% { transform: scale(0.9); opacity: 0.8; }
+          50% { transform: scale(2.0); opacity: 0; }
+          100% { transform: scale(0.9); opacity: 0.8; }
+        }
+
+        .marker-halo { 
+          position: absolute; 
+          width: 48px; 
+          height: 48px; 
+          border-radius: 50%; /* Rounded boundary */
+          z-index: 1;
+          filter: blur(8px);
+          animation: marker-pulse 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .marker-box { 
+          position: relative; 
+          width: 48px; 
+          height: 48px; 
+          border-radius: 50%; /* Rounded marker box to match effect */
+          background-color: white; 
+          box-shadow: 0 8px 20px rgba(0,0,0,0.12); 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+          z-index: 2; 
+        }
+        
+        .filter-enhanced { filter: contrast(1.1) saturate(1.1); }
+
         .leaflet-popup-content-wrapper { border-radius: 2.5rem; padding: 0; box-shadow: 0 30px 60px -15px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.8); overflow: hidden; }
         .leaflet-popup-content { margin: 0 !important; width: auto !important; }
       `}</style>
 
-      {/* Bottom Selection Buttons */}
       <div className="absolute bottom-28 left-0 right-0 z-[1000] px-6 flex items-center justify-center gap-4 pointer-events-none">
          <button 
            onClick={() => setActiveType('cat')} 
            className={`pointer-events-auto flex-1 p-4 rounded-3xl shadow-xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 border-b-4 ${activeType === 'cat' ? 'bg-orange-600 border-orange-800 text-white scale-105 shadow-orange-500/50' : 'bg-white border-slate-200 text-slate-400 opacity-90 hover:opacity-100 hover:bg-slate-50'}`}
          >
-             <div className="w-8 h-8 transition-colors">
-                <svg viewBox="0 0 100 110" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: catSvg }} />
+             <div className="w-8 h-8 transition-transform">
+                <img src={CAT_PNG} className={`w-full h-full object-contain ${activeType === 'cat' ? 'brightness-0 invert' : ''}`} alt="Cat" />
              </div>
              <span className={`font-black uppercase tracking-wider text-sm ${activeType === 'cat' ? 'text-white' : 'text-slate-500'}`}>{t.catFood}</span>
          </button>
@@ -185,8 +204,8 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
            onClick={() => setActiveType('dog')} 
            className={`pointer-events-auto flex-1 p-4 rounded-3xl shadow-xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 border-b-4 ${activeType === 'dog' ? 'bg-blue-600 border-blue-800 text-white scale-105 shadow-blue-500/50' : 'bg-white border-slate-200 text-slate-400 opacity-90 hover:opacity-100 hover:bg-slate-50'}`}
          >
-             <div className="w-8 h-8 transition-colors">
-                <svg viewBox="0 0 100 110" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: dogSvg }} />
+             <div className="w-8 h-8 transition-transform">
+                <img src={DOG_PNG} className={`w-full h-full object-contain ${activeType === 'dog' ? 'brightness-0 invert' : ''}`} alt="Dog" />
              </div>
              <span className={`font-black uppercase tracking-wider text-sm ${activeType === 'dog' ? 'text-white' : 'text-slate-500'}`}>{t.dogFood}</span>
          </button>
@@ -237,7 +256,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           const iconKey = `${color}-${marker.type || 'cat'}`;
           return (
             <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={markerIcons[iconKey]}>
-              <Popup><div className="p-6 min-w-[240px]"><div className="flex items-center gap-5 mb-5 border-b pb-5"><div className="w-14 h-14 bg-slate-50 rounded-[1.2rem] flex items-center justify-center text-slate-400"><User size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p><p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p></div></div><div className="flex items-center gap-5"><div className="w-14 h-14 bg-slate-50 rounded-[1.2rem] flex items-center justify-center text-slate-400"><Clock size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.time}</p><p className="text-sm font-bold text-slate-600 leading-none">{timeLabel}</p></div></div><div className="mt-6 pt-5 border-t flex items-center justify-between"><div className="flex items-center gap-3"><div className={`w-3 h-3 rounded-full animate-pulse ${color === 'green' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : (color === 'yellow' ? 'bg-amber-500 shadow-[0_0_10px_#f59e0b]' : 'bg-red-500 shadow-[0_0_10px_#ef4444]')}`} /><span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span></div></div></div></Popup>
+              <Popup><div className="p-6 min-w-[240px]"><div className="flex items-center gap-5 mb-5 border-b pb-5"><div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><User size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p><p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p></div></div><div className="flex items-center gap-5"><div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><Clock size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.time}</p><p className="text-sm font-bold text-slate-600 leading-none">{timeLabel}</p></div></div><div className="mt-6 pt-5 border-t flex items-center justify-between"><div className="flex items-center gap-3"><div className={`w-3 h-3 rounded-full animate-pulse ${color === 'green' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : (color === 'yellow' ? 'bg-amber-500 shadow-[0_0_10px_#f59e0b]' : 'bg-red-500 shadow-[0_0_10px_#ef4444]')}`} /><span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span></div></div></div></Popup>
             </Marker>
           );
         })}
