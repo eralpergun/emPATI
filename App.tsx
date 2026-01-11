@@ -50,27 +50,38 @@ const App: React.FC = () => {
       return;
     }
 
+    // Konum hassasiyeti için kritik ayarlar
     const geoOptions: PositionOptions = {
-      enableHighAccuracy: true,
-      timeout: 15000, 
-      maximumAge: 5000 
+      enableHighAccuracy: true, // GPS donanımını zorla
+      timeout: 25000,           // Uydu kilidi için daha fazla zaman tanı (25sn)
+      maximumAge: 0             // ASLA önbellekten (cache) konum getirme, hep taze veri iste
     };
 
     const handleSuccess = (pos: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = pos.coords;
       
-      if (accuracy > 1000 && lastRawLocation.current !== null) return;
+      // Filtreleme Mantığı:
+      // 1. Eğer gelen veri çok kötüyse (>2km) ve zaten bir konumumuz varsa, güncelleme.
+      if (accuracy > 2000 && lastRawLocation.current !== null) return;
+
+      // 2. Eğer elimizde zaten çok hassas bir konum varsa (<20m) ve yeni gelen veri kötüyse (>50m), 
+      // bu muhtemelen GPS sinyali kaybı sonucu WiFi bazlı sapmadır. Yoksay.
+      if (lastRawLocation.current && lastRawLocation.current.accuracy < 20 && accuracy > 50) {
+        return;
+      }
+      
+      // 3. Mesafe ve Hassasiyet kontrolü:
       if (lastRawLocation.current) {
         const distMoved = calculateDistance(latitude, longitude, lastRawLocation.current.lat, lastRawLocation.current.lng);
-        const accuracyImproved = accuracy < lastRawLocation.current.accuracy * 0.8;
-        if (distMoved < 2 && !accuracyImproved) return;
+        // Çok küçük hareketleri (titremeleri) engelle, ama hassasiyet arttıysa güncelle.
+        if (distMoved < 3 && accuracy >= lastRawLocation.current.accuracy) return;
       }
       
       lastRawLocation.current = { lat: latitude, lng: longitude, accuracy };
       setUserLocation([latitude, longitude]);
       setLocationAccuracy(accuracy);
 
-      if (accuracy > 50) {
+      if (accuracy > 60) {
         setLocationStatus('approximate');
       } else {
         setLocationStatus('precise');
@@ -78,19 +89,28 @@ const App: React.FC = () => {
     };
 
     const handleError = (err: GeolocationPositionError) => {
+      console.warn("Konum hatası:", err.message);
       if (err.code === err.PERMISSION_DENIED) setLocationStatus('denied');
       else {
-        // Retry with lower accuracy if needed
+        // Hata durumunda (timeout vb.) düşük hassasiyetle tekrar dene ama kullanıcıya hissettirme
+        // Bu sadece fallback içindir.
         navigator.geolocation.getCurrentPosition(
-          handleSuccess,
+          (pos) => {
+             // Sadece elimizde hiç konum yoksa bunu kullan
+             if (!lastRawLocation.current) handleSuccess(pos);
+          },
           () => setLocationStatus('error'),
-          { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
+          { enableHighAccuracy: false, timeout: 30000, maximumAge: 0 }
         );
       }
     };
 
+    // İlk konumu al
     navigator.geolocation.getCurrentPosition(handleSuccess, handleError, geoOptions);
+    
+    // Konumu izle
     const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, geoOptions);
+    
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
