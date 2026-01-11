@@ -22,7 +22,9 @@ const locales: Record<LanguageCode, any> = {
   tr, en: enUS, it, fr, de, es, pt, ru, jp: ja, ar: arSA
 };
 
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+// CartoDB Positron (Light) - Known for extreme speed and reliability
+// Less detail than Voyager but much faster and cleaner
+const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 
 const CAT_PNG = "https://cdn-icons-png.flaticon.com/512/616/616430.png";
 const DOG_PNG = "https://cdn-icons-png.flaticon.com/512/616/616554.png";
@@ -40,12 +42,24 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const t = translations[currentLang];
   const locale = locales[currentLang] || tr;
 
+  // Fix map layout issues when visibility changes
   useEffect(() => {
     if (isVisible && mapRef.current) {
-      const timer = setTimeout(() => {
-        mapRef.current?.invalidateSize({ animate: true });
-      }, 400); 
-      return () => clearTimeout(timer);
+      const fixMap = () => {
+        mapRef.current?.invalidateSize({ animate: false });
+      };
+      
+      // Immediate fix
+      fixMap();
+      
+      // Slight delay fix for animations
+      const timer = setTimeout(fixMap, 300);
+      window.addEventListener('resize', fixMap);
+      
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', fixMap);
+      };
     }
   }, [isVisible]);
 
@@ -64,7 +78,6 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
     const icons: any = {};
     ['cat', 'dog', 'both'].forEach(type => {
       Object.entries(states).forEach(([status, color]) => {
-        
         let contentHtml = '';
         if (type === 'cat') {
           contentHtml = `<img src="${CAT_PNG}" class="w-8 h-8 object-contain drop-shadow-sm filter-enhanced" />`;
@@ -164,7 +177,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           position: absolute; 
           width: 48px; 
           height: 48px; 
-          border-radius: 50%; /* Rounded boundary */
+          border-radius: 50%; 
           z-index: 1;
           filter: blur(8px);
           animation: marker-pulse 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
@@ -174,7 +187,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           position: relative; 
           width: 48px; 
           height: 48px; 
-          border-radius: 50%; /* Rounded marker box to match effect */
+          border-radius: 50%; 
           background-color: white; 
           box-shadow: 0 8px 20px rgba(0,0,0,0.12); 
           display: flex; 
@@ -188,6 +201,17 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
 
         .leaflet-popup-content-wrapper { border-radius: 2.5rem; padding: 0; box-shadow: 0 30px 60px -15px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.8); overflow: hidden; }
         .leaflet-popup-content { margin: 0 !important; width: auto !important; }
+
+        /* Smoother fade in for tiles */
+        .leaflet-tile {
+          will-change: opacity;
+          transition: opacity 0.2s ease-out;
+        }
+        
+        /* Background color to mask loading tiles */
+        .leaflet-container {
+          background: #f1f5f9;
+        }
       `}</style>
 
       <div className="absolute bottom-28 left-0 right-0 z-[1000] px-6 flex items-center justify-center gap-4 pointer-events-none">
@@ -234,14 +258,21 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         ref={mapRef} 
         zoomControl={false} 
         preferCanvas={true} 
-        attributionControl={false} 
+        attributionControl={false}
+        worldCopyJump={true}
       >
         <MapEvents />
         <TileLayer 
-          url={TILE_URL} 
-          keepBuffer={6} 
+          url={TILE_URL}
+          subdomains={['a', 'b', 'c', 'd']}
+          keepBuffer={4} // Balanced: Preloads enough without killing bandwidth
+          updateInterval={100} // Standard interval
           maxZoom={20}
-          updateWhenIdle={true}
+          maxNativeZoom={19} // Scales up 19 to 20 without needing new tiles
+          updateWhenIdle={false} 
+          updateWhenZooming={false}
+          detectRetina={true}
+          noWrap={false}
         />
 
         {userLocation && (
