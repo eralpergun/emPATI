@@ -151,7 +151,7 @@ const App: React.FC = () => {
     const nearbyMarkers = userLocation 
       ? markers.filter(m => calculateDistance(userLocation[0], userLocation[1], m.lat, m.lng) <= 10000)
       : markers;
-    const fresh = nearbyMarkers.filter(m => (now - m.timestamp) / (1000 * 60 * 60) < 6);
+    const fresh = nearbyMarkers.filter(m => (now - m.timestamp) / (1000 * 60 * 60) < 8);
     const lastAdded = markers.length > 0 
       ? [...markers].sort((a, b) => b.timestamp - a.timestamp)[0] 
       : null;

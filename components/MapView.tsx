@@ -231,7 +231,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
 
         {markers.map((marker) => {
           const hoursElapsed = (Date.now() - marker.timestamp) / (1000 * 60 * 60);
-          const color = hoursElapsed < 6 ? 'green' : (hoursElapsed < 12 ? 'yellow' : 'red');
+          const color = hoursElapsed < 8 ? 'green' : (hoursElapsed < 16 ? 'yellow' : 'red');
           const timeLabel = formatDistanceToNow(marker.timestamp, { addSuffix: true, locale } as any);
           const typeLabel = marker.type === 'cat' ? t.catFood : marker.type === 'dog' ? t.dogFood : t.bothFood;
           const iconKey = `${color}-${marker.type || 'cat'}`;
