@@ -22,8 +22,8 @@ const locales: Record<LanguageCode, any> = {
   tr, en: enUS, it, fr, de, es, pt, ru, jp: ja, ar: arSA
 };
 
-// OpenStreetMap Standard: Cadde ve sokak isimlerinin en net görüldüğü katman.
-const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+// CartoDB Voyager: Bina detayları, net cadde isimleri, hızlı yüklenme, modern görünüm.
+const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
 const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible }) => {
   const mapRef = useRef<L.Map>(null);
@@ -221,7 +221,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         <TileLayer 
           url={TILE_URL} 
           keepBuffer={6} 
-          maxZoom={19}
+          maxZoom={20}
           updateWhenIdle={true}
         />
 
