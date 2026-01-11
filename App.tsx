@@ -18,11 +18,12 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('login');
   const [markers, setMarkers] = useState<FoodMarker[]>([]);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [locationAccuracy, setLocationAccuracy] = useState<number>(0);
+  const [locationAccuracy, setLocationAccuracy] = useState<number>(Infinity);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
   const [language, setLanguage] = useState<LanguageCode>('tr');
 
   const t = translations[language];
+  const lastUpdateRef = useRef<number>(0);
 
   const resolveName = (name: string) => {
     if (!name) return t.anonymousUser;
@@ -50,18 +51,17 @@ const App: React.FC = () => {
 
     const geoOptions: PositionOptions = {
       enableHighAccuracy: true,
-      timeout: 15000, 
+      timeout: 10000, 
       maximumAge: 0 
     };
 
     const handleSuccess = (pos: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = pos.coords;
       
-      // 1. Aşırı büyük hataları (baz istasyonu verisi gibi 5km+) direkt yoksay
+      // Ignore extremely poor accuracy (over 5km)
       if (accuracy > 5000) return;
 
       setUserLocation(prevLoc => {
-        // İlk konum ise direkt kabul et
         if (!prevLoc) {
           setLocationAccuracy(accuracy);
           setLocationStatus(accuracy < 40 ? 'precise' : 'approximate');
@@ -69,44 +69,45 @@ const App: React.FC = () => {
         }
 
         const dist = calculateDistance(latitude, longitude, prevLoc[0], prevLoc[1]);
-
-        // YENİ VE DAHA HIZLI MANTIK:
-        // 1. Yeni veri çok daha kaliteliyse (daha küçük accuracy) -> Kesin güncelle.
-        // 2. Hareket edildiyse (> 10m) -> Kesin güncelle (Eski konumda takılmayı önler).
-        // 3. Çok az hareket varsa (< 5m) VE yeni veri eskisinden daha kötü veya aynıysa -> Güncelleme (Jitter/Titreme önleme).
+        const now = Date.now();
         
-        // Bu mantık kullanıcının yürüdüğünü (mesafe > 10m) algıladığı an, sinyal kalitesi biraz düşse bile konumu günceller.
-        // Böylece "konum yanlış yerde kaldı" sorunu çözülür.
-
-        if (accuracy <= locationAccuracy || dist > 10) {
+        // Update if:
+        // 1. Accuracy is significantly better
+        // 2. User moved more than 5 meters
+        // 3. It's been more than 5 seconds since last update
+        if (accuracy < locationAccuracy * 0.8 || dist > 5 || (now - lastUpdateRef.current > 5000)) {
           setLocationAccuracy(accuracy);
           setLocationStatus(accuracy < 40 ? 'precise' : 'approximate');
+          lastUpdateRef.current = now;
           return [latitude, longitude];
         }
 
-        // Yukarıdaki şartlar sağlanmadıysa (duruyoruz ve sinyal kötü), eski konumu koru (titremeyi engelle)
         return prevLoc;
       });
     };
 
     const handleError = (err: GeolocationPositionError) => {
-      console.warn("Konum hatası:", err.message);
-      if (err.code === err.PERMISSION_DENIED) setLocationStatus('denied');
-      else {
-        // Watcher hata verirse tek seferlik deneme yap
+      console.warn("Geolocation error:", err.message);
+      if (err.code === err.PERMISSION_DENIED) {
+        setLocationStatus('denied');
+      } else {
+        // Fallback: try with lower accuracy if high accuracy fails
         navigator.geolocation.getCurrentPosition(handleSuccess, () => setLocationStatus('error'), {
-           enableHighAccuracy: true,
+           enableHighAccuracy: false,
            timeout: 10000,
-           maximumAge: 0
+           maximumAge: 5000
         });
       }
     };
 
-    // Watcher başlat
+    // Priming: get current position immediately
+    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, geoOptions);
+
+    // Continuous watching
     const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, geoOptions);
     
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [locationAccuracy]); // locationAccuracy değişimi dependency olarak eklendi ki logic güncel kalsın
+  }, []); // Empty dependency array to prevent reset loops
 
   useEffect(() => {
     const savedUser = localStorage.getItem('empati_user');
@@ -127,7 +128,6 @@ const App: React.FC = () => {
       const now = Date.now();
       querySnapshot.forEach((doc) => {
         const data = doc.data() as FoodMarker;
-        // Keep only markers from last 24h
         if (now - data.timestamp < 24 * 60 * 60 * 1000) {
            loadedMarkers.push({ ...data, id: doc.id });
         }
@@ -191,7 +191,7 @@ const App: React.FC = () => {
       try {
         await addDoc(collection(db, "markers"), newMarker);
       } catch (e) {
-        console.error("Ekleme hatası: ", e);
+        console.error("Marker addition error: ", e);
       }
     } else {
       setMarkers(prev => [...prev, { ...newMarker, id: Math.random().toString() }]);
