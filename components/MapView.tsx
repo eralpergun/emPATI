@@ -22,9 +22,10 @@ const locales: Record<LanguageCode, any> = {
   tr, en: enUS, it, fr, de, es, pt, ru, jp: ja, ar: arSA
 };
 
-// CartoDB Positron (Light) - Known for extreme speed and reliability
-// Less detail than Voyager but much faster and cleaner
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+// GOOGLE MAPS TILES - Fastest & Most Reliable
+// lyrs=m (Streets), s (Satellite), y (Hybrid), p (Terrain)
+const TILE_URL = "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}";
+const SUBDOMAINS = ['mt0', 'mt1', 'mt2', 'mt3'];
 
 const CAT_PNG = "https://cdn-icons-png.flaticon.com/512/616/616430.png";
 const DOG_PNG = "https://cdn-icons-png.flaticon.com/512/616/616554.png";
@@ -42,26 +43,44 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const t = translations[currentLang];
   const locale = locales[currentLang] || tr;
 
-  // Fix map layout issues when visibility changes
+  // Ultimate fix for "Map not loading" / "Grey Box" issues
   useEffect(() => {
-    if (isVisible && mapRef.current) {
-      const fixMap = () => {
-        mapRef.current?.invalidateSize({ animate: false });
-      };
-      
-      // Immediate fix
-      fixMap();
-      
-      // Slight delay fix for animations
-      const timer = setTimeout(fixMap, 300);
-      window.addEventListener('resize', fixMap);
-      
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('resize', fixMap);
-      };
+    if (!mapRef.current || !isVisible) return;
+    
+    const map = mapRef.current;
+    
+    const handleResize = () => {
+       map.invalidateSize({ animate: false });
+    };
+
+    // 1. Force resize immediately
+    handleResize();
+
+    // 2. Use ResizeObserver to catch any container changes
+    const resizeObserver = new ResizeObserver(() => {
+       handleResize();
+    });
+    
+    const container = map.getContainer();
+    if (container) {
+      resizeObserver.observe(container);
     }
-  }, [isVisible]);
+
+    // 3. Failsafe timers (Kickstart) - Aggressive intervals
+    const timers = [100, 300, 500, 1000, 2000].map(ms => 
+      setTimeout(handleResize, ms)
+    );
+
+    // 4. Force resize on touch start (mobile fix)
+    const onTouch = () => handleResize();
+    container.addEventListener('touchstart', onTouch, { passive: true });
+
+    return () => {
+      resizeObserver.disconnect();
+      timers.forEach(clearTimeout);
+      container.removeEventListener('touchstart', onTouch);
+    };
+  }, [isVisible, forceOpen]);
 
   useEffect(() => {
     if (userLocation) return;
@@ -162,7 +181,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   }
 
   return (
-    <div className="w-full h-full relative bg-[#f8fafc]">
+    <div className="w-full h-full relative bg-[#f1f5f9]">
       <style>{`
         .custom-marker { background: none !important; border: none !important; box-shadow: none !important; contain: content; overflow: visible !important; }
         .marker-container { position: relative; display: flex; align-items: center; justify-content: center; will-change: transform; transform: translate3d(0,0,0); }
@@ -255,6 +274,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         zoom={17} 
         doubleClickZoom={false} 
         className="w-full h-full" 
+        style={{ height: '100%', width: '100%', position: 'absolute' }}
         ref={mapRef} 
         zoomControl={false} 
         preferCanvas={true} 
@@ -264,15 +284,15 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         <MapEvents />
         <TileLayer 
           url={TILE_URL}
-          subdomains={['a', 'b', 'c', 'd']}
-          keepBuffer={4} // Balanced: Preloads enough without killing bandwidth
-          updateInterval={100} // Standard interval
-          maxZoom={20}
-          maxNativeZoom={19} // Scales up 19 to 20 without needing new tiles
+          subdomains={SUBDOMAINS}
+          detectRetina={false} 
           updateWhenIdle={false} 
-          updateWhenZooming={false}
-          detectRetina={true}
+          keepBuffer={3} 
+          maxNativeZoom={21}
+          maxZoom={22}
+          minZoom={2}
           noWrap={false}
+          crossOrigin="anonymous" 
         />
 
         {userLocation && (
