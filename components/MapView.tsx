@@ -22,8 +22,8 @@ const locales: Record<LanguageCode, any> = {
   tr, en: enUS, it, fr, de, es, pt, ru, jp: ja, ar: arSA
 };
 
-// CartoDB Voyager: Detaylı (bina, park, yol ayrımı) ama çok hızlı ve estetik.
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+// OpenStreetMap Standard: Cadde ve sokak isimlerinin en net görüldüğü katman.
+const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible }) => {
   const mapRef = useRef<L.Map>(null);
@@ -221,8 +221,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         <TileLayer 
           url={TILE_URL} 
           keepBuffer={6} 
-          maxZoom={20} 
-          detectRetina={true}
+          maxZoom={19}
           updateWhenIdle={true}
         />
 
