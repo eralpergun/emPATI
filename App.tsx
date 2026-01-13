@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import Login from './components/Login';
 import MapView from './components/MapView';
 import Menu from './components/Menu';
@@ -239,6 +240,7 @@ const App: React.FC = () => {
         </div>
       </main>
       <BottomNav currentView={view as any} onViewChange={(v) => setView(v as View)} currentLang={language} />
+      <Analytics />
     </div>
   );
 };
