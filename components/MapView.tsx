@@ -93,7 +93,12 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   }, [userLocation]);
 
   const markerIcons = useMemo(() => {
-    const states = { green: '#10b981', yellow: '#f59e0b', red: '#ef4444' };
+    const states = { 
+      fresh: '#10b981', // Green
+      warning: '#f59e0b', // Yellow
+      stale: '#ef4444', // Red
+      expired: '#64748b' // Gray/Slate for very old
+    };
     const icons: any = {};
     ['cat', 'dog', 'both'].forEach(type => {
       Object.entries(states).forEach(([status, color]) => {
@@ -114,15 +119,20 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         icons[`${status}-${type}`] = L.divIcon({
           html: `
             <div class="marker-container">
+              <div class="marker-rings">
+                <div class="ring ring-1" style="border-color: ${color};"></div>
+                <div class="ring ring-2" style="border-color: ${color};"></div>
+                <div class="ring ring-3" style="border-color: ${color};"></div>
+              </div>
               <div class="marker-halo" style="background-color: ${color}; box-shadow: 0 0 30px ${color};"></div>
-              <div class="marker-box">
+              <div class="marker-box" style="border: 2px solid ${color};">
                 ${contentHtml}
               </div>
             </div>`,
           className: 'custom-marker', 
-          iconSize: [48, 48], 
-          iconAnchor: [24, 24], 
-          popupAnchor: [0, -24],
+          iconSize: [64, 64], 
+          iconAnchor: [32, 32], 
+          popupAnchor: [0, -32],
         });
       });
     });
@@ -188,9 +198,37 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         
         @keyframes marker-pulse {
           0% { transform: scale(0.9); opacity: 0.8; }
-          50% { transform: scale(2.0); opacity: 0; }
+          50% { transform: scale(1.5); opacity: 0.4; }
           100% { transform: scale(0.9); opacity: 0.8; }
         }
+
+        @keyframes ring-expand {
+          0% { transform: scale(0.5); opacity: 0.8; border-width: 4px; }
+          100% { transform: scale(2.5); opacity: 0; border-width: 1px; }
+        }
+
+        .marker-rings {
+          position: absolute;
+          width: 48px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 0;
+        }
+
+        .ring {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          border: 2px solid transparent;
+          animation: ring-expand 3s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+        }
+
+        .ring-1 { animation-delay: 0s; }
+        .ring-2 { animation-delay: 1s; }
+        .ring-3 { animation-delay: 2s; }
 
         .marker-halo { 
           position: absolute; 
@@ -199,7 +237,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           border-radius: 50%; 
           z-index: 1;
           filter: blur(8px);
-          animation: marker-pulse 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+          animation: marker-pulse 2s infinite ease-in-out;
         }
 
         .marker-box { 
@@ -301,13 +339,27 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
 
         {markers.map((marker) => {
           const hoursElapsed = (Date.now() - marker.timestamp) / (1000 * 60 * 60);
-          const color = hoursElapsed < 8 ? 'green' : (hoursElapsed < 16 ? 'yellow' : 'red');
+          let status: 'fresh' | 'warning' | 'stale' | 'expired' = 'fresh';
+          
+          if (hoursElapsed < 6) status = 'fresh';
+          else if (hoursElapsed < 12) status = 'warning';
+          else if (hoursElapsed < 24) status = 'stale';
+          else status = 'expired';
+
           const timeLabel = formatDistanceToNow(marker.timestamp, { addSuffix: true, locale } as any);
           const typeLabel = marker.type === 'cat' ? t.catFood : marker.type === 'dog' ? t.dogFood : t.bothFood;
-          const iconKey = `${color}-${marker.type || 'cat'}`;
+          const iconKey = `${status}-${marker.type || 'cat'}`;
+          
+          const statusColors = {
+            fresh: 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
+            warning: 'bg-amber-500 shadow-[0_0_10px_#f59e0b]',
+            stale: 'bg-red-500 shadow-[0_0_10px_#ef4444]',
+            expired: 'bg-slate-500 shadow-[0_0_10px_#64748b]'
+          };
+
           return (
             <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={markerIcons[iconKey]}>
-              <Popup><div className="p-6 min-w-[240px]"><div className="flex items-center gap-5 mb-5 border-b pb-5"><div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><User size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p><p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p></div></div><div className="flex items-center gap-5"><div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><Clock size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.time}</p><p className="text-sm font-bold text-slate-600 leading-none">{timeLabel}</p></div></div><div className="mt-6 pt-5 border-t flex items-center justify-between"><div className="flex items-center gap-3"><div className={`w-3 h-3 rounded-full animate-pulse ${color === 'green' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : (color === 'yellow' ? 'bg-amber-500 shadow-[0_0_10px_#f59e0b]' : 'bg-red-500 shadow-[0_0_10px_#ef4444]')}`} /><span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span></div></div></div></Popup>
+              <Popup><div className="p-6 min-w-[240px]"><div className="flex items-center gap-5 mb-5 border-b pb-5"><div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><User size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p><p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p></div></div><div className="flex items-center gap-5"><div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><Clock size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.time}</p><p className="text-sm font-bold text-slate-600 leading-none">{timeLabel}</p></div></div><div className="mt-6 pt-5 border-t flex items-center justify-between"><div className="flex items-center gap-3"><div className={`w-3 h-3 rounded-full animate-pulse ${statusColors[status]}`} /><span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span></div></div></div></Popup>
             </Marker>
           );
         })}
