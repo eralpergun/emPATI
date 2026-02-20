@@ -8,7 +8,7 @@ import BottomNav from './components/BottomNav';
 import { User, FoodMarker, LanguageCode } from './types';
 import { Cat, WifiOff } from 'lucide-react';
 import { translations } from './constants/translations';
-import { db, collection, addDoc, onSnapshot, query, orderBy, limit, isConfigured } from './lib/firebase';
+import { db, collection, addDoc, getDocs, query, orderBy, limit, isConfigured } from './lib/firebase';
 
 type View = 'login' | 'menu' | 'map' | 'settings';
 type LocationStatus = 'searching' | 'precise' | 'approximate' | 'denied' | 'error';
@@ -122,21 +122,31 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isConfigured || !db) return;
 
-    const q = query(collection(db, "markers"));
-    const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (querySnapshot) => {
-      const loadedMarkers: FoodMarker[] = [];
-      const now = Date.now();
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as FoodMarker;
-        if (now - data.timestamp < 24 * 60 * 60 * 1000) {
-           loadedMarkers.push({ ...data, id: doc.id });
-        }
-      });
-      setMarkers(loadedMarkers);
-    }, (error) => {
-      console.error("Firestore connectivity issue:", error);
-    });
-    return () => unsubscribe();
+    const fetchMarkers = async () => {
+      try {
+        const q = query(collection(db, "markers"));
+        const querySnapshot = await getDocs(q);
+        const loadedMarkers: FoodMarker[] = [];
+        const now = Date.now();
+        querySnapshot.forEach((doc) => {
+          const data = doc.data() as FoodMarker;
+          if (now - data.timestamp < 24 * 60 * 60 * 1000) {
+             loadedMarkers.push({ ...data, id: doc.id });
+          }
+        });
+        setMarkers(loadedMarkers);
+      } catch (error) {
+        console.error("Firestore fetch error:", error);
+      }
+    };
+
+    // Initial fetch
+    fetchMarkers();
+
+    // Poll every 5 seconds as requested
+    const intervalId = setInterval(fetchMarkers, 5000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const stats = useMemo(() => {
