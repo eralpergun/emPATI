@@ -8,7 +8,7 @@ import BottomNav from './components/BottomNav';
 import { User, FoodMarker, LanguageCode } from './types';
 import { Cat, WifiOff } from 'lucide-react';
 import { translations } from './constants/translations';
-import { db, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, limit, isConfigured } from './lib/firebase';
+import { db, ref, push, get, remove, query, limitToLast, isConfigured } from './lib/firebase';
 
 type View = 'login' | 'menu' | 'map' | 'settings';
 type LocationStatus = 'searching' | 'precise' | 'approximate' | 'denied' | 'error';
@@ -124,19 +124,26 @@ const App: React.FC = () => {
 
     const fetchMarkers = async () => {
       try {
-        const q = query(collection(db, "markers"));
-        const querySnapshot = await getDocs(q);
+        const markersRef = ref(db, 'markers');
+        // Fetch last 100 markers to prevent loading too much data
+        const q = query(markersRef, limitToLast(100));
+        const snapshot = await get(q);
+        
         const loadedMarkers: FoodMarker[] = [];
         const now = Date.now();
-        querySnapshot.forEach((doc) => {
-          const data = doc.data() as FoodMarker;
-          if (now - data.timestamp < 24 * 60 * 60 * 1000) {
-             loadedMarkers.push({ ...data, id: doc.id });
-          }
-        });
+        
+        if (snapshot.exists()) {
+          snapshot.forEach((childSnapshot) => {
+            const data = childSnapshot.val() as FoodMarker;
+            // Filter by 24h window
+            if (now - data.timestamp < 24 * 60 * 60 * 1000) {
+              loadedMarkers.push({ ...data, id: childSnapshot.key as string });
+            }
+          });
+        }
         setMarkers(loadedMarkers);
       } catch (error) {
-        console.error("Firestore fetch error:", error);
+        console.error("Realtime Database fetch error:", error);
       }
     };
 
@@ -203,11 +210,13 @@ const App: React.FC = () => {
 
     if (isConfigured && db) {
       try {
-        await addDoc(collection(db, "markers"), newMarker);
+        const markersRef = ref(db, 'markers');
+        await push(markersRef, newMarker);
         // No need to fetch immediately, the interval will catch it eventually for others
         // and we already have it locally.
       } catch (e) {
         console.error("Marker addition error: ", e);
+        alert("Mama eklenirken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.");
         // Rollback on error if needed, but for now we keep it simple
         setMarkers(prev => prev.filter(m => m.id !== tempId));
       }
@@ -218,14 +227,8 @@ const App: React.FC = () => {
     if (!isConfigured || !db || !user?.isAdmin) return;
 
     try {
-      const q = query(collection(db, "markers"));
-      const querySnapshot = await getDocs(q);
-      
-      const deletePromises = querySnapshot.docs.map(document => 
-        deleteDoc(doc(db, "markers", document.id))
-      );
-
-      await Promise.all(deletePromises);
+      const markersRef = ref(db, 'markers');
+      await remove(markersRef);
       setMarkers([]);
       alert("Tüm mamalar başarıyla silindi.");
     } catch (error) {
