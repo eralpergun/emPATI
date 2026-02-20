@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Map, Clock, Heart, Navigation, User, ChevronRight, Info } from 'lucide-react';
+import { Map, Clock, Heart, Navigation, User, ChevronRight, Info, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS, it, fr, de, es, pt, ru, ja, arSA } from 'date-fns/locale';
 import { LanguageCode } from '../types';
@@ -18,13 +18,15 @@ interface MenuProps {
   onOpenSettings: () => void;
   userName: string;
   currentLang: LanguageCode;
+  isAdmin?: boolean;
+  onDeleteAll?: () => void;
 }
 
 const locales: Record<LanguageCode, any> = {
   tr, en: enUS, it, fr, de, es, pt, ru, jp: ja, ar: arSA
 };
 
-const Menu: React.FC<MenuProps> = ({ stats, onOpenMap, onOpenSettings, userName, currentLang }) => {
+const Menu: React.FC<MenuProps> = ({ stats, onOpenMap, onOpenSettings, userName, currentLang, isAdmin, onDeleteAll }) => {
   const t = translations[currentLang];
   const locale = locales[currentLang] || tr;
 
@@ -36,6 +38,20 @@ const Menu: React.FC<MenuProps> = ({ stats, onOpenMap, onOpenSettings, userName,
           <p className="text-slate-500 mt-1 font-medium">{t.summary}</p>
         </div>
       </div>
+
+      {isAdmin && (
+        <button 
+          onClick={() => {
+            if (window.confirm('Tüm mamaları silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) {
+              onDeleteAll?.();
+            }
+          }}
+          className="w-full bg-red-500 p-5 rounded-[2rem] text-white flex items-center justify-center gap-3 hover:bg-red-600 transition-colors shadow-xl shadow-red-200"
+        >
+          <Trash2 size={24} />
+          <span className="font-black text-lg">Tüm Mamaları Sil</span>
+        </button>
+      )}
 
       <button 
         onClick={onOpenMap}

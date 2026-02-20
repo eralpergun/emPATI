@@ -1,6 +1,7 @@
 
 export interface User {
   name: string;
+  isAdmin?: boolean;
 }
 
 export interface FoodMarker {

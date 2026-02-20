@@ -8,7 +8,7 @@ import BottomNav from './components/BottomNav';
 import { User, FoodMarker, LanguageCode } from './types';
 import { Cat, WifiOff } from 'lucide-react';
 import { translations } from './constants/translations';
-import { db, collection, addDoc, onSnapshot, query, orderBy, limit, isConfigured } from './lib/firebase';
+import { db, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, limit, isConfigured } from './lib/firebase';
 
 type View = 'login' | 'menu' | 'map' | 'settings';
 type LocationStatus = 'searching' | 'precise' | 'approximate' | 'denied' | 'error';
@@ -122,21 +122,31 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isConfigured || !db) return;
 
-    const q = query(collection(db, "markers"));
-    const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (querySnapshot) => {
-      const loadedMarkers: FoodMarker[] = [];
-      const now = Date.now();
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as FoodMarker;
-        if (now - data.timestamp < 24 * 60 * 60 * 1000) {
-           loadedMarkers.push({ ...data, id: doc.id });
-        }
-      });
-      setMarkers(loadedMarkers);
-    }, (error) => {
-      console.error("Firestore connectivity issue:", error);
-    });
-    return () => unsubscribe();
+    const fetchMarkers = async () => {
+      try {
+        const q = query(collection(db, "markers"));
+        const querySnapshot = await getDocs(q);
+        const loadedMarkers: FoodMarker[] = [];
+        const now = Date.now();
+        querySnapshot.forEach((doc) => {
+          const data = doc.data() as FoodMarker;
+          if (now - data.timestamp < 24 * 60 * 60 * 1000) {
+             loadedMarkers.push({ ...data, id: doc.id });
+          }
+        });
+        setMarkers(loadedMarkers);
+      } catch (error) {
+        console.error("Firestore fetch error:", error);
+      }
+    };
+
+    // Initial fetch
+    fetchMarkers();
+
+    // Poll every 15 seconds as requested to reduce server load
+    const intervalId = setInterval(fetchMarkers, 15000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const stats = useMemo(() => {
@@ -187,14 +197,40 @@ const App: React.FC = () => {
       type: type 
     };
 
+    // Optimistically update local state immediately
+    const tempId = Math.random().toString();
+    setMarkers(prev => [...prev, { ...newMarker, id: tempId }]);
+
     if (isConfigured && db) {
       try {
         await addDoc(collection(db, "markers"), newMarker);
+        // No need to fetch immediately, the interval will catch it eventually for others
+        // and we already have it locally.
       } catch (e) {
         console.error("Marker addition error: ", e);
+        // Rollback on error if needed, but for now we keep it simple
+        setMarkers(prev => prev.filter(m => m.id !== tempId));
       }
-    } else {
-      setMarkers(prev => [...prev, { ...newMarker, id: Math.random().toString() }]);
+    }
+  };
+
+  const handleDeleteAllMarkers = async () => {
+    if (!isConfigured || !db || !user?.isAdmin) return;
+
+    try {
+      const q = query(collection(db, "markers"));
+      const querySnapshot = await getDocs(q);
+      
+      const deletePromises = querySnapshot.docs.map(document => 
+        deleteDoc(doc(db, "markers", document.id))
+      );
+
+      await Promise.all(deletePromises);
+      setMarkers([]);
+      alert("Tüm mamalar başarıyla silindi.");
+    } catch (error) {
+      console.error("Error deleting markers:", error);
+      alert("Mamalar silinirken bir hata oluştu.");
     }
   };
 
@@ -221,7 +257,15 @@ const App: React.FC = () => {
 
       <main className="flex-1 w-full relative">
         <div className={`absolute inset-0 z-20 bg-slate-50 transition-all duration-300 ${view === 'menu' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-          <Menu stats={stats} onOpenMap={() => setView('map')} onOpenSettings={() => setView('settings')} userName={resolveName(user.name)} currentLang={language} />
+          <Menu 
+            stats={stats} 
+            onOpenMap={() => setView('map')} 
+            onOpenSettings={() => setView('settings')} 
+            userName={resolveName(user.name)} 
+            currentLang={language} 
+            isAdmin={user.isAdmin}
+            onDeleteAll={handleDeleteAllMarkers}
+          />
         </div>
         <div className={`absolute inset-0 z-30 bg-slate-50 transition-opacity duration-300 ${view === 'settings' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
           <Settings currentLang={language} onLanguageChange={handleLanguageChange} onBack={() => setView('menu')} />

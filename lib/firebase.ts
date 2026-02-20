@@ -6,6 +6,9 @@ import {
   enableIndexedDbPersistence, 
   collection, 
   addDoc, 
+  getDocs,
+  deleteDoc,
+  doc,
   onSnapshot, 
   query, 
   orderBy, 
@@ -53,4 +56,4 @@ if (isConfigured) {
   }
 }
 
-export { db, analytics, collection, addDoc, onSnapshot, query, orderBy, limit, isConfigured };
+export { db, analytics, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, query, orderBy, limit, isConfigured };
