@@ -14,9 +14,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onViewChange, curren
   const t = translations[currentLang];
 
   const tabs = [
-    { id: 'menu', icon: Home, label: t.welcome },
-    { id: 'map', icon: Map, label: t.openMap },
-    { id: 'settings', icon: Settings, label: t.settings },
+    { id: 'menu', icon: Home, label: t.navMenu },
+    { id: 'map', icon: Map, label: t.navMap },
+    { id: 'settings', icon: Settings, label: t.navSettings },
   ] as const;
 
   return (
@@ -38,7 +38,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onViewChange, curren
             >
               <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
               <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
-                {tab.id === 'menu' ? 'ANA' : (tab.id === 'map' ? 'HARİTA' : 'AYAR')}
+                {tab.label}
               </span>
               {isActive && (
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full" />

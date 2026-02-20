@@ -22,12 +22,83 @@ const App: React.FC = () => {
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
   const [language, setLanguage] = useState<LanguageCode>('tr');
 
+  const [showLanguagePrompt, setShowLanguagePrompt] = useState(false);
+  const [suggestedLang, setSuggestedLang] = useState<LanguageCode | null>(null);
+  const languageCheckDoneRef = useRef(false);
+
   const t = translations[language];
   const lastUpdateRef = useRef<number>(0);
 
   const resolveName = (name: string) => {
     if (!name) return t.anonymousUser;
     return name === '@@ANONYMOUS@@' ? t.anonymousUser : name;
+  };
+
+  const countryToLang: Record<string, LanguageCode> = {
+    tr: 'tr',
+    us: 'en', gb: 'en', uk: 'en',
+    it: 'it',
+    fr: 'fr',
+    de: 'de',
+    es: 'es',
+    pt: 'pt', br: 'pt',
+    ru: 'ru',
+    jp: 'jp',
+    sa: 'ar', ae: 'ar', eg: 'ar', qa: 'ar'
+  };
+
+  const checkLocationLanguage = async (lat: number, lon: number) => {
+    if (languageCheckDoneRef.current) return;
+    
+    try {
+      // Simple reverse geocoding to get country code
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
+        headers: {
+          'User-Agent': 'EmpatiApp/1.0'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const countryCode = data.address?.country_code?.toLowerCase();
+        
+        if (countryCode && countryToLang[countryCode]) {
+          const detectedLang = countryToLang[countryCode];
+          // If detected language is different from current language and hasn't been dismissed before
+          if (detectedLang !== language) {
+             const dismissed = localStorage.getItem(`empati_lang_dismiss_${detectedLang}`);
+             if (!dismissed) {
+               setSuggestedLang(detectedLang);
+               setShowLanguagePrompt(true);
+             }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Language detection error:", error);
+    } finally {
+      languageCheckDoneRef.current = true;
+    }
+  };
+
+  useEffect(() => {
+    if (userLocation && !languageCheckDoneRef.current) {
+      checkLocationLanguage(userLocation[0], userLocation[1]);
+    }
+  }, [userLocation]);
+
+  const handleAcceptLanguage = () => {
+    if (suggestedLang) {
+      handleLanguageChange(suggestedLang);
+      setShowLanguagePrompt(false);
+    }
+  };
+
+  const handleDeclineLanguage = () => {
+    if (suggestedLang) {
+      localStorage.setItem(`empati_lang_dismiss_${suggestedLang}`, 'true');
+      setShowLanguagePrompt(false);
+    }
   };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -303,6 +374,37 @@ const App: React.FC = () => {
         </div>
       </main>
       <BottomNav currentView={view as any} onViewChange={(v) => setView(v as View)} currentLang={language} />
+
+      {/* Language Suggestion Modal */}
+      {showLanguagePrompt && suggestedLang && (
+        <div className="fixed inset-0 z-[5000] flex items-end sm:items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm p-6 rounded-[2rem] shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-black uppercase">{suggestedLang}</span>
+              </div>
+              <h3 className="text-xl font-black text-slate-900">Dil Değiştirilsin mi?</h3>
+              <p className="text-slate-500 font-medium text-sm">
+                Bulunduğunuz konumun diline ({suggestedLang.toUpperCase()}) geçmek ister misiniz?
+              </p>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button 
+                  onClick={handleDeclineLanguage}
+                  className="py-3 px-4 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200 transition-colors"
+                >
+                  Hayır
+                </button>
+                <button 
+                  onClick={handleAcceptLanguage}
+                  className="py-3 px-4 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                >
+                  Evet, Değiştir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

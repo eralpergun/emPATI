@@ -37,7 +37,10 @@ export const translations: Record<LanguageCode, any> = {
     locationDisabled: "Konum Kapalı",
     leaderboard: "Liderlik Tablosu",
     leaderboardDesc: "En çok mama bırakan kahramanlar",
-    noData: "Henüz veri yok"
+    noData: "Henüz veri yok",
+    navMenu: "ANA",
+    navMap: "HARİTA",
+    navSettings: "AYAR"
   },
   en: {
     welcome: "Hello",
@@ -74,7 +77,10 @@ export const translations: Record<LanguageCode, any> = {
     locationDisabled: "Location Off",
     leaderboard: "Leaderboard",
     leaderboardDesc: "Heroes who added the most food",
-    noData: "No data yet"
+    noData: "No data yet",
+    navMenu: "HOME",
+    navMap: "MAP",
+    navSettings: "SETTINGS"
   },
   it: {
     welcome: "Ciao",
@@ -111,7 +117,10 @@ export const translations: Record<LanguageCode, any> = {
     locationDisabled: "Posizione Off",
     leaderboard: "Classifica",
     leaderboardDesc: "Eroi che hanno aggiunto più cibo",
-    noData: "Nessun dato"
+    noData: "Nessun dato",
+    navMenu: "HOME",
+    navMap: "MAPPA",
+    navSettings: "OPZIONI"
   },
   fr: {
     welcome: "Bonjour",
@@ -148,7 +157,10 @@ export const translations: Record<LanguageCode, any> = {
     locationDisabled: "GPS Désactivé",
     leaderboard: "Classement",
     leaderboardDesc: "Héros ayant ajouté le plus de nourriture",
-    noData: "Pas de données"
+    noData: "Pas de données",
+    navMenu: "ACCUEIL",
+    navMap: "CARTE",
+    navSettings: "OPTIONS"
   },
   de: {
     welcome: "Hallo",
@@ -185,7 +197,10 @@ export const translations: Record<LanguageCode, any> = {
     locationDisabled: "Standort Aus",
     leaderboard: "Bestenliste",
     leaderboardDesc: "Helden mit dem meisten Futter",
-    noData: "Keine Daten"
+    noData: "Keine Daten",
+    navMenu: "HOME",
+    navMap: "KARTE",
+    navSettings: "OPTIONEN"
   },
   es: {
     welcome: "Hola",
@@ -222,7 +237,10 @@ export const translations: Record<LanguageCode, any> = {
     locationDisabled: "GPS Apagado",
     leaderboard: "Clasificación",
     leaderboardDesc: "Héroes que añadieron más comida",
-    noData: "Sin datos"
+    noData: "Sin datos",
+    navMenu: "INICIO",
+    navMap: "MAPA",
+    navSettings: "AJUSTES"
   },
   pt: {
     welcome: "Olá",
@@ -293,7 +311,10 @@ export const translations: Record<LanguageCode, any> = {
     locationDisabled: "GPS Выкл",
     leaderboard: "Таблица лидеров",
     leaderboardDesc: "Герои, добавившие больше всего еды",
-    noData: "Нет данных"
+    noData: "Нет данных",
+    navMenu: "ГЛАВНАЯ",
+    navMap: "КАРТА",
+    navSettings: "НАСТР."
   },
   jp: {
     welcome: "こんにちは",
@@ -330,7 +351,10 @@ export const translations: Record<LanguageCode, any> = {
     locationDisabled: "位置情報オフ",
     leaderboard: "リーダーボード",
     leaderboardDesc: "最も多くのエサを追加したヒーロー",
-    noData: "データなし"
+    noData: "データなし",
+    navMenu: "ホーム",
+    navMap: "地図",
+    navSettings: "設定"
   },
   ar: {
     welcome: "مرحبا",
@@ -367,6 +391,9 @@ export const translations: Record<LanguageCode, any> = {
     locationDisabled: "الموقع مغلق",
     leaderboard: "لوحة المتصدرين",
     leaderboardDesc: "الأبطال الذين أضافوا أكبر قدر من الطعام",
-    noData: "لا توجد بيانات"
+    noData: "لا توجد بيانات",
+    navMenu: "رئيسية",
+    navMap: "خريطة",
+    navSettings: "إعدادات"
   }
 };
