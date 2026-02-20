@@ -34,7 +34,10 @@ export const translations: Record<LanguageCode, any> = {
     settings: "Ayarlar",
     language: "DİL SEÇİMİ",
     logout: "ÇIKIŞ YAP",
-    locationDisabled: "Konum Kapalı"
+    locationDisabled: "Konum Kapalı",
+    leaderboard: "Liderlik Tablosu",
+    leaderboardDesc: "En çok mama bırakan kahramanlar",
+    noData: "Henüz veri yok"
   },
   en: {
     welcome: "Hello",
@@ -68,7 +71,10 @@ export const translations: Record<LanguageCode, any> = {
     settings: "Settings",
     language: "LANGUAGE",
     logout: "LOGOUT",
-    locationDisabled: "Location Off"
+    locationDisabled: "Location Off",
+    leaderboard: "Leaderboard",
+    leaderboardDesc: "Heroes who added the most food",
+    noData: "No data yet"
   },
   it: {
     welcome: "Ciao",
@@ -102,7 +108,10 @@ export const translations: Record<LanguageCode, any> = {
     settings: "Impostazioni",
     language: "LINGUA",
     logout: "ESCI",
-    locationDisabled: "Posizione Off"
+    locationDisabled: "Posizione Off",
+    leaderboard: "Classifica",
+    leaderboardDesc: "Eroi che hanno aggiunto più cibo",
+    noData: "Nessun dato"
   },
   fr: {
     welcome: "Bonjour",
@@ -136,7 +145,10 @@ export const translations: Record<LanguageCode, any> = {
     settings: "Paramètres",
     language: "LANGUE",
     logout: "DÉCONNEXION",
-    locationDisabled: "GPS Désactivé"
+    locationDisabled: "GPS Désactivé",
+    leaderboard: "Classement",
+    leaderboardDesc: "Héros ayant ajouté le plus de nourriture",
+    noData: "Pas de données"
   },
   de: {
     welcome: "Hallo",
@@ -170,7 +182,10 @@ export const translations: Record<LanguageCode, any> = {
     settings: "Einstellungen",
     language: "SPRACHE",
     logout: "ABMELDEN",
-    locationDisabled: "Standort Aus"
+    locationDisabled: "Standort Aus",
+    leaderboard: "Bestenliste",
+    leaderboardDesc: "Helden mit dem meisten Futter",
+    noData: "Keine Daten"
   },
   es: {
     welcome: "Hola",
@@ -204,7 +219,10 @@ export const translations: Record<LanguageCode, any> = {
     settings: "Ajustes",
     language: "IDIOMA",
     logout: "SALIR",
-    locationDisabled: "GPS Apagado"
+    locationDisabled: "GPS Apagado",
+    leaderboard: "Clasificación",
+    leaderboardDesc: "Héroes que añadieron más comida",
+    noData: "Sin datos"
   },
   pt: {
     welcome: "Olá",
@@ -272,7 +290,10 @@ export const translations: Record<LanguageCode, any> = {
     settings: "Настройки",
     language: "ЯЗЫК",
     logout: "ВЫЙТИ",
-    locationDisabled: "GPS Выкл"
+    locationDisabled: "GPS Выкл",
+    leaderboard: "Таблица лидеров",
+    leaderboardDesc: "Герои, добавившие больше всего еды",
+    noData: "Нет данных"
   },
   jp: {
     welcome: "こんにちは",
@@ -306,7 +327,10 @@ export const translations: Record<LanguageCode, any> = {
     settings: "設定",
     language: "言語",
     logout: "ログアウト",
-    locationDisabled: "位置情報オフ"
+    locationDisabled: "位置情報オフ",
+    leaderboard: "リーダーボード",
+    leaderboardDesc: "最も多くのエサを追加したヒーロー",
+    noData: "データなし"
   },
   ar: {
     welcome: "مرحبا",
@@ -340,6 +364,9 @@ export const translations: Record<LanguageCode, any> = {
     settings: "إعدادات",
     language: "لغة",
     logout: "خروج",
-    locationDisabled: "الموقع مغلق"
+    locationDisabled: "الموقع مغلق",
+    leaderboard: "لوحة المتصدرين",
+    leaderboardDesc: "الأبطال الذين أضافوا أكبر قدر من الطعام",
+    noData: "لا توجد بيانات"
   }
 };

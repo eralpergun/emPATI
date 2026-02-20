@@ -276,6 +276,7 @@ const App: React.FC = () => {
         <div className={`absolute inset-0 z-20 bg-slate-50 transition-all duration-300 ${view === 'menu' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
           <Menu 
             stats={stats} 
+            markers={markers}
             onOpenMap={() => setView('map')} 
             onOpenSettings={() => setView('settings')} 
             userName={resolveName(user.name)} 

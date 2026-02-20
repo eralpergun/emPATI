@@ -1,9 +1,9 @@
 
-import React from 'react';
-import { Map, Clock, Heart, Navigation, User, ChevronRight, Info, Trash2 } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Map, Clock, Heart, Navigation, User, ChevronRight, Info, Trash2, Trophy } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS, it, fr, de, es, pt, ru, ja, arSA } from 'date-fns/locale';
-import { LanguageCode } from '../types';
+import { LanguageCode, FoodMarker } from '../types';
 import { translations } from '../constants/translations';
 
 interface MenuProps {
@@ -14,6 +14,7 @@ interface MenuProps {
     lastAdded: any;
     isLocationEnabled: boolean;
   };
+  markers: FoodMarker[];
   onOpenMap: () => void;
   onOpenSettings: () => void;
   userName: string;
@@ -26,9 +27,22 @@ const locales: Record<LanguageCode, any> = {
   tr, en: enUS, it, fr, de, es, pt, ru, jp: ja, ar: arSA
 };
 
-const Menu: React.FC<MenuProps> = ({ stats, onOpenMap, onOpenSettings, userName, currentLang, isAdmin, onDeleteAll }) => {
+const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, userName, currentLang, isAdmin, onDeleteAll }) => {
   const t = translations[currentLang];
   const locale = locales[currentLang] || tr;
+
+  const leaderboard = useMemo(() => {
+    const counts: Record<string, number> = {};
+    markers.forEach(m => {
+      const name = m.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : m.addedBy;
+      counts[name] = (counts[name] || 0) + 1;
+    });
+    
+    return Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([name, count], index) => ({ name, count, rank: index + 1 }));
+  }, [markers, t]);
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6 h-full overflow-y-auto pb-32">
@@ -104,6 +118,47 @@ const Menu: React.FC<MenuProps> = ({ stats, onOpenMap, onOpenSettings, userName,
               <p className="text-[11px] text-slate-400 font-bold">{t.staleDesc}</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Leaderboard Section */}
+      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-yellow-100 p-2.5 rounded-2xl text-yellow-600">
+            <Trophy size={24} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h3 className="text-lg font-black text-slate-900">{t.leaderboard}</h3>
+            <p className="text-xs text-slate-400 font-bold">{t.leaderboardDesc}</p>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          {leaderboard.length > 0 ? (
+            leaderboard.map((user, index) => (
+              <div key={user.name} className="flex items-center justify-between group">
+                <div className="flex items-center gap-4">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm ${
+                    index === 0 ? 'bg-yellow-100 text-yellow-700' : 
+                    index === 1 ? 'bg-slate-100 text-slate-700' : 
+                    index === 2 ? 'bg-orange-100 text-orange-700' : 
+                    'bg-slate-50 text-slate-400'
+                  }`}>
+                    {user.rank}
+                  </div>
+                  <span className="font-bold text-slate-700 group-hover:text-slate-900 transition-colors">
+                    {user.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-black text-slate-900">{user.count}</span>
+                  <Heart size={14} className="text-red-500 fill-red-500" />
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-slate-400 text-sm py-4 font-medium">{t.noData}</p>
+          )}
         </div>
       </div>
 
