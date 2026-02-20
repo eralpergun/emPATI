@@ -161,7 +161,7 @@ const App: React.FC = () => {
     const nearbyMarkers = userLocation 
       ? markers.filter(m => calculateDistance(userLocation[0], userLocation[1], m.lat, m.lng) <= 10000)
       : markers;
-    const fresh = nearbyMarkers.filter(m => (now - m.timestamp) / (1000 * 60 * 60) < 8);
+    const fresh = nearbyMarkers.filter(m => (now - m.timestamp) / (1000 * 60 * 60) < 6);
     const lastAdded = markers.length > 0 
       ? [...markers].sort((a, b) => b.timestamp - a.timestamp)[0] 
       : null;
@@ -237,6 +237,20 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteMarker = async (id: string) => {
+    if (!isConfigured || !db || !user?.isAdmin) return;
+
+    try {
+      const markerRef = ref(db, `markers/${id}`);
+      await remove(markerRef);
+      setMarkers(prev => prev.filter(m => m.id !== id));
+      alert("Mama başarıyla silindi.");
+    } catch (error) {
+      console.error("Error deleting marker:", error);
+      alert("Mama silinirken bir hata oluştu.");
+    }
+  };
+
   if (!user || view === 'login') return <Login onLogin={handleLogin} currentLang={language} />;
 
   return (
@@ -282,6 +296,8 @@ const App: React.FC = () => {
             onBack={() => setView('menu')}
             currentLang={language}
             isVisible={view === 'map'}
+            isAdmin={user.isAdmin}
+            onDeleteMarker={handleDeleteMarker}
           />
         </div>
       </main>

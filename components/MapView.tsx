@@ -16,6 +16,8 @@ interface MapViewProps {
   onBack: () => void;
   currentLang: LanguageCode;
   isVisible?: boolean;
+  isAdmin?: boolean;
+  onDeleteMarker?: (id: string) => void;
 }
 
 const locales: Record<LanguageCode, any> = {
@@ -30,7 +32,7 @@ const SUBDOMAINS = ['mt0', 'mt1', 'mt2', 'mt3'];
 const CAT_PNG = "https://cdn-icons-png.flaticon.com/512/616/616430.png";
 const DOG_PNG = "https://cdn-icons-png.flaticon.com/512/616/616554.png";
 
-const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible }) => {
+const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible, isAdmin, onDeleteMarker }) => {
   const mapRef = useRef<L.Map>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [initialCenterDone, setInitialCenterDone] = useState(false);
@@ -95,7 +97,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const markerIcons = useMemo(() => {
     const states = { 
       fresh: '#10b981', // Green
-      warning: '#f59e0b', // Yellow
+      warning: '#f97316', // Orange
       stale: '#ef4444', // Red
       expired: '#64748b' // Gray/Slate for very old
     };
@@ -352,14 +354,56 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           
           const statusColors = {
             fresh: 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
-            warning: 'bg-amber-500 shadow-[0_0_10px_#f59e0b]',
+            warning: 'bg-orange-500 shadow-[0_0_10px_#f97316]',
             stale: 'bg-red-500 shadow-[0_0_10px_#ef4444]',
             expired: 'bg-slate-500 shadow-[0_0_10px_#64748b]'
           };
 
           return (
             <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={markerIcons[iconKey]}>
-              <Popup><div className="p-6 min-w-[240px]"><div className="flex items-center gap-5 mb-5 border-b pb-5"><div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><User size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p><p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p></div></div><div className="flex items-center gap-5"><div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><Clock size={28} /></div><div><p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.time}</p><p className="text-sm font-bold text-slate-600 leading-none">{timeLabel}</p></div></div><div className="mt-6 pt-5 border-t flex items-center justify-between"><div className="flex items-center gap-3"><div className={`w-3 h-3 rounded-full animate-pulse ${statusColors[status]}`} /><span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span></div></div></div></Popup>
+              <Popup>
+                <div className="p-6 min-w-[240px]">
+                  <div className="flex items-center gap-5 mb-5 border-b pb-5">
+                    <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100">
+                      <User size={28} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p>
+                      <p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100">
+                      <Clock size={28} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.time}</p>
+                      <p className="text-sm font-bold text-slate-600 leading-none">{timeLabel}</p>
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-5 border-t flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full animate-pulse ${statusColors[status]}`} />
+                      <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span>
+                    </div>
+                  </div>
+                  {isAdmin && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm('Bu mamayı silmek istediğinize emin misiniz?')) {
+                            onDeleteMarker?.(marker.id);
+                          }
+                        }}
+                        className="w-full bg-red-500 text-white py-2 px-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
+                      >
+                        Bu Mamayı Sil
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </Popup>
             </Marker>
           );
         })}
