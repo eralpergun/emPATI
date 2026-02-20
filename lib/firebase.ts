@@ -1,5 +1,6 @@
 
 import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import { 
   initializeFirestore, 
   enableIndexedDbPersistence, 
@@ -26,10 +27,13 @@ const firebaseConfig = {
 const isConfigured = firebaseConfig.apiKey && firebaseConfig.apiKey.length > 0 && firebaseConfig.apiKey !== "YOUR-API-KEY-HERE";
 
 let db: any;
+let analytics: any;
 
 if (isConfigured) {
   try {
     const app = initializeApp(firebaseConfig);
+    analytics = getAnalytics(app);
+    
     // Connection issues often stem from WebSockets being blocked. 
     // experimentalForceLongPolling can solve "Could not reach Cloud Firestore backend" errors.
     db = initializeFirestore(app, {
@@ -49,4 +53,4 @@ if (isConfigured) {
   }
 }
 
-export { db, collection, addDoc, onSnapshot, query, orderBy, limit, isConfigured };
+export { db, analytics, collection, addDoc, onSnapshot, query, orderBy, limit, isConfigured };
