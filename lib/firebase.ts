@@ -13,13 +13,14 @@ import {
 
 // Firebase yapılandırması
 const firebaseConfig = {
-  apiKey: "AIzaSyBGchpTjjpwTo5dTOzm5ImiROMk9XTspzw",
-  authDomain: "empati-fb1a9.firebaseapp.com",
-  projectId: "empati-fb1a9",
-  storageBucket: "empati-fb1a9.firebasestorage.app",
-  messagingSenderId: "830265145262",
-  appId: "1:830265145262:web:80420542200bf223493a3f",
-  measurementId: "G-4LNLQNYYMR"
+  apiKey: "AIzaSyBqrNP1fslPzs641ZqFEXWFC6rgFhP0rg8",
+  authDomain: "empatiglobal.firebaseapp.com",
+  databaseURL: "https://empatiglobal-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "empatiglobal",
+  storageBucket: "empatiglobal.firebasestorage.app",
+  messagingSenderId: "871916987115",
+  appId: "1:871916987115:web:c734041620ace535c814ae",
+  measurementId: "G-32MFMXLEPV"
 };
 
 const isConfigured = firebaseConfig.apiKey && firebaseConfig.apiKey.length > 0 && firebaseConfig.apiKey !== "YOUR-API-KEY-HERE";
