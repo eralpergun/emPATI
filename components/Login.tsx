@@ -22,7 +22,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
       const admins = {
         'eralp': 'Eralp Ergün',
         'sabri': 'Sabri Ahirzaman',
-        'nehir': 'Nehir Çatalbaş'
+        'nehir': 'Nehir Çatalbaş',
+        'tibet': 'Tibet Şahin'
       };
 
       if (admins[adminPassword as keyof typeof admins]) {
