@@ -162,7 +162,10 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const handleLocate = useCallback(() => {
     if (userLocation && mapRef.current) {
       setIsFollowing(true);
-      mapRef.current.setView(userLocation, 18, { animate: true });
+      mapRef.current.flyTo(userLocation, 16.5, {
+        animate: true,
+        duration: 1.5 // Smooth zoom effect duration in seconds
+      });
     }
   }, [userLocation]);
 
@@ -342,7 +345,32 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         />
 
         {userLocation && (
-          <><Circle center={userLocation} radius={Math.max(locationAccuracy, 10)} pathOptions={{ fillColor: '#3b82f6', fillOpacity: 0.08, color: '#3b82f6', weight: 1, dashArray: '8, 8' }} /><CircleMarker center={userLocation} radius={10} pathOptions={{ fillColor: '#3b82f6', fillOpacity: 1, color: 'white', weight: 4 }}><Popup className="font-bold text-blue-600">{t.youAreHere}</Popup></CircleMarker></>
+          <>
+            {/* Outer glow/accuracy ring - Fixed size in pixels to prevent screen covering on zoom */}
+            <CircleMarker 
+              center={userLocation} 
+              radius={24} 
+              pathOptions={{ 
+                fillColor: '#3b82f6', 
+                fillOpacity: 0.2, 
+                color: '#3b82f6', 
+                weight: 0 
+              }} 
+            />
+            {/* Inner precise location dot */}
+            <CircleMarker 
+              center={userLocation} 
+              radius={8} 
+              pathOptions={{ 
+                fillColor: '#3b82f6', 
+                fillOpacity: 1, 
+                color: 'white', 
+                weight: 3 
+              }}
+            >
+              <Popup className="font-bold text-blue-600">{t.youAreHere}</Popup>
+            </CircleMarker>
+          </>
         )}
 
         {currentZoom < MIN_ZOOM_LEVEL ? (
