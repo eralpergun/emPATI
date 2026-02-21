@@ -19,8 +19,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isAdminMode) {
-      if (adminPassword === 'empati') {
-        onLogin({ name: 'Admin', isAdmin: true });
+      const admins = {
+        'eralp': 'Eralp Ergün',
+        'sabri': 'Sabri Ahirzaman',
+        'nehir': 'Nehir Çatalbaş'
+      };
+
+      if (admins[adminPassword as keyof typeof admins]) {
+        onLogin({ name: admins[adminPassword as keyof typeof admins], isAdmin: true });
       } else {
         setError('Hatalı şifre!');
       }
