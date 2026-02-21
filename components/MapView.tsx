@@ -141,6 +141,9 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
     return icons;
   }, [t]);
 
+  const [currentZoom, setCurrentZoom] = useState(17);
+  const MIN_ZOOM_LEVEL = 15;
+
   const MapEvents = () => {
     useMapEvents({
       dblclick(e) {
@@ -148,6 +151,9 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
       },
       dragstart() {
         setIsFollowing(false);
+      },
+      zoomend(e) {
+        setCurrentZoom(e.target.getZoom());
       }
     });
     return null;
@@ -339,74 +345,83 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           <><Circle center={userLocation} radius={Math.max(locationAccuracy, 10)} pathOptions={{ fillColor: '#3b82f6', fillOpacity: 0.08, color: '#3b82f6', weight: 1, dashArray: '8, 8' }} /><CircleMarker center={userLocation} radius={10} pathOptions={{ fillColor: '#3b82f6', fillOpacity: 1, color: 'white', weight: 4 }}><Popup className="font-bold text-blue-600">{t.youAreHere}</Popup></CircleMarker></>
         )}
 
-        {markers.map((marker) => {
-          const hoursElapsed = (Date.now() - marker.timestamp) / (1000 * 60 * 60);
-          let status: 'fresh' | 'warning' | 'stale' | 'expired' = 'fresh';
-          
-          if (hoursElapsed < 6) status = 'fresh';
-          else if (hoursElapsed < 12) status = 'warning';
-          else if (hoursElapsed < 24) status = 'stale';
-          else status = 'expired';
+        {currentZoom < MIN_ZOOM_LEVEL ? (
+           <div className="leaflet-top leaflet-left mt-20 ml-4 pointer-events-none z-[1000]">
+             <div className="bg-slate-900/90 backdrop-blur-md text-white px-4 py-2 rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+               <AlertCircle size={18} className="text-orange-500" />
+               <span className="text-xs font-bold">Mamaları görmek için yaklaşın</span>
+             </div>
+           </div>
+        ) : (
+          markers.map((marker) => {
+            const hoursElapsed = (Date.now() - marker.timestamp) / (1000 * 60 * 60);
+            let status: 'fresh' | 'warning' | 'stale' | 'expired' = 'fresh';
+            
+            if (hoursElapsed < 6) status = 'fresh';
+            else if (hoursElapsed < 12) status = 'warning';
+            else if (hoursElapsed < 24) status = 'stale';
+            else status = 'expired';
 
-          const timeLabel = formatDistanceToNow(marker.timestamp, { addSuffix: true, locale } as any);
-          const typeLabel = marker.type === 'cat' ? t.catFood : marker.type === 'dog' ? t.dogFood : t.bothFood;
-          const iconKey = `${status}-${marker.type || 'cat'}`;
-          
-          const statusColors = {
-            fresh: 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
-            warning: 'bg-orange-500 shadow-[0_0_10px_#f97316]',
-            stale: 'bg-red-500 shadow-[0_0_10px_#ef4444]',
-            expired: 'bg-slate-500 shadow-[0_0_10px_#64748b]'
-          };
+            const timeLabel = formatDistanceToNow(marker.timestamp, { addSuffix: true, locale } as any);
+            const typeLabel = marker.type === 'cat' ? t.catFood : marker.type === 'dog' ? t.dogFood : t.bothFood;
+            const iconKey = `${status}-${marker.type || 'cat'}`;
+            
+            const statusColors = {
+              fresh: 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
+              warning: 'bg-orange-500 shadow-[0_0_10px_#f97316]',
+              stale: 'bg-red-500 shadow-[0_0_10px_#ef4444]',
+              expired: 'bg-slate-500 shadow-[0_0_10px_#64748b]'
+            };
 
-          return (
-            <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={markerIcons[iconKey]}>
-              <Popup>
-                <div className="p-6 min-w-[240px]">
-                  <div className="flex items-center gap-5 mb-5 border-b pb-5">
-                    <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100">
-                      <User size={28} />
+            return (
+              <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={markerIcons[iconKey]}>
+                <Popup>
+                  <div className="p-6 min-w-[240px]">
+                    <div className="flex items-center gap-5 mb-5 border-b pb-5">
+                      <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100">
+                        <User size={28} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p>
+                        <p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p>
-                      <p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p>
+                    <div className="flex items-center gap-5">
+                      <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100">
+                        <Clock size={28} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.time}</p>
+                        <p className="text-sm font-bold text-slate-600 leading-none">{timeLabel}</p>
+                      </div>
                     </div>
+                    <div className="mt-6 pt-5 border-t flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full animate-pulse ${statusColors[status]}`} />
+                        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span>
+                      </div>
+                    </div>
+                    {isAdmin && (
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Bu mamayı silmek istediğinize emin misiniz?')) {
+                              onDeleteMarker?.(marker.id);
+                            }
+                          }}
+                          className="w-full bg-red-500 text-white py-2 px-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
+                        >
+                          Bu Mamayı Sil
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100">
-                      <Clock size={28} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.time}</p>
-                      <p className="text-sm font-bold text-slate-600 leading-none">{timeLabel}</p>
-                    </div>
-                  </div>
-                  <div className="mt-6 pt-5 border-t flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full animate-pulse ${statusColors[status]}`} />
-                      <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span>
-                    </div>
-                  </div>
-                  {isAdmin && (
-                    <div className="mt-4 pt-4 border-t border-slate-100">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (window.confirm('Bu mamayı silmek istediğinize emin misiniz?')) {
-                            onDeleteMarker?.(marker.id);
-                          }
-                        }}
-                        className="w-full bg-red-500 text-white py-2 px-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
-                      >
-                        Bu Mamayı Sil
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
+                </Popup>
+              </Marker>
+            );
+          })
+        )}
       </MapContainer>
     </div>
   );
