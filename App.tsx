@@ -8,7 +8,7 @@ import BottomNav from './components/BottomNav';
 import { User, FoodMarker, LanguageCode } from './types';
 import { Cat, WifiOff } from 'lucide-react';
 import { translations } from './constants/translations';
-import { db, ref, push, get, remove, query, limitToLast, isConfigured } from './lib/firebase';
+import { db, ref, push, get, remove, query, limitToLast, isConfigured, set } from './lib/firebase';
 
 type View = 'login' | 'menu' | 'map' | 'settings';
 type LocationStatus = 'searching' | 'precise' | 'approximate' | 'denied' | 'error';
@@ -283,6 +283,17 @@ const App: React.FC = () => {
       try {
         const markersRef = ref(db, 'markers');
         await push(markersRef, newMarker);
+        
+        // Update user's last activity if not anonymous
+        if (user.name !== '@@ANONYMOUS@@' && !user.isAdmin) {
+          const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
+          const lastActivityRef = ref(db, `users/${safeUsername}/lastActivity`);
+          // We use set here to update just the timestamp
+          // Note: This assumes the user exists. If they don't (e.g. old session), it might create a partial record or fail silently depending on rules.
+          // Since we created the user on login, it should be fine.
+          set(lastActivityRef, Date.now()).catch(err => console.error("Activity update error", err));
+        }
+
         // No need to fetch immediately, the interval will catch it eventually for others
         // and we already have it locally.
       } catch (e) {
@@ -322,6 +333,20 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!user || !db) return;
+    
+    try {
+      const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
+      await remove(ref(db, `users/${safeUsername}`));
+      handleLogout();
+      alert("Hesabınız başarıyla silindi.");
+    } catch (error) {
+      console.error("Account deletion error:", error);
+      alert("Hesap silinirken bir hata oluştu.");
+    }
+  };
+
   if (!user || view === 'login') return <Login onLogin={handleLogin} currentLang={language} />;
 
   return (
@@ -357,7 +382,13 @@ const App: React.FC = () => {
           />
         </div>
         <div className={`absolute inset-0 z-30 bg-slate-50 transition-opacity duration-300 ${view === 'settings' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-          <Settings currentLang={language} onLanguageChange={handleLanguageChange} onBack={() => setView('menu')} />
+          <Settings 
+            currentLang={language} 
+            onLanguageChange={handleLanguageChange} 
+            onBack={() => setView('menu')} 
+            onDeleteAccount={handleDeleteAccount}
+            isAnonymous={user.name === '@@ANONYMOUS@@' || !!user.isAdmin}
+          />
         </div>
         <div className={`absolute inset-0 z-10 transition-opacity duration-300 ${view === 'map' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
           <MapView 
