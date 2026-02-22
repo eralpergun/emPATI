@@ -162,7 +162,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const handleLocate = useCallback(() => {
     if (userLocation && mapRef.current) {
       setIsFollowing(true);
-      mapRef.current.flyTo(userLocation, 16.5, {
+      mapRef.current.flyTo(userLocation, 18, {
         animate: true,
         duration: 1.5 // Smooth zoom effect duration in seconds
       });
@@ -373,7 +373,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           </>
         )}
 
-        {currentZoom < MIN_ZOOM_LEVEL ? (
+        {currentZoom < MIN_ZOOM_LEVEL && !isAdmin ? (
            <div className="leaflet-top leaflet-left mt-20 ml-4 pointer-events-none z-[1000]">
              <div className="bg-slate-900/90 backdrop-blur-md text-white px-4 py-2 rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in zoom-in duration-300">
                <AlertCircle size={18} className="text-orange-500" />
