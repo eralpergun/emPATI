@@ -10,7 +10,8 @@ import {
   remove,
   onValue,
   query,
-  limitToLast
+  limitToLast,
+  update
 } from "firebase/database";
 
 // Firebase yapılandırması
@@ -40,4 +41,4 @@ if (isConfigured) {
   }
 }
 
-export { db, analytics, ref, push, set, get, remove, onValue, query, limitToLast, isConfigured };
+export { db, analytics, ref, push, set, get, remove, onValue, query, limitToLast, isConfigured, update };

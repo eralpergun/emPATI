@@ -8,7 +8,7 @@ import BottomNav from './components/BottomNav';
 import { User, FoodMarker, LanguageCode, NotificationSetting } from './types';
 import { Cat, WifiOff, X } from 'lucide-react';
 import { translations } from './constants/translations';
-import { db, ref, push, get, remove, query, limitToLast, isConfigured, set } from './lib/firebase';
+import { db, ref, push, get, remove, query, limitToLast, isConfigured, set, update } from './lib/firebase';
 
 type View = 'login' | 'menu' | 'map' | 'settings';
 type LocationStatus = 'searching' | 'precise' | 'approximate' | 'denied' | 'error';
@@ -403,9 +403,22 @@ const App: React.FC = () => {
     
     try {
       const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
+      
+      // Anonymize user's markers
+      const updates: Record<string, any> = {};
+      markers.forEach(marker => {
+        if (marker.addedBy === user.name) {
+          updates[`markers/${marker.id}/addedBy`] = '@@ANONYMOUS@@';
+        }
+      });
+
+      if (Object.keys(updates).length > 0) {
+        await update(ref(db), updates);
+      }
+
       await remove(ref(db, `users/${safeUsername}`));
       handleLogout();
-      alert("Hesabınız başarıyla silindi.");
+      alert("Hesabınız başarıyla silindi. Eklediğiniz mamalar anonim olarak korunacaktır.");
     } catch (error) {
       console.error("Account deletion error:", error);
       alert("Hesap silinirken bir hata oluştu.");
