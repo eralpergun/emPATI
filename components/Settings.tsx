@@ -1,12 +1,14 @@
 
 import React from 'react';
-import { Language, LanguageCode } from '../types';
-import { Globe, Check, Trash2 } from 'lucide-react';
+import { Language, LanguageCode, NotificationSetting } from '../types';
+import { Globe, Check, Trash2, Bell } from 'lucide-react';
 import { translations } from '../constants/translations';
 
 interface SettingsProps {
   currentLang: LanguageCode;
   onLanguageChange: (lang: LanguageCode) => void;
+  notificationSetting: NotificationSetting;
+  onNotificationSettingChange: (setting: NotificationSetting) => void;
   onBack: () => void;
   onDeleteAccount: () => void;
   isAnonymous: boolean;
@@ -25,8 +27,24 @@ const languages: Language[] = [
   { code: 'ar', name: 'العربية', flag: '🇸🇦' },
 ];
 
-const Settings: React.FC<SettingsProps> = ({ currentLang, onLanguageChange, onBack, onDeleteAccount, isAnonymous }) => {
+const Settings: React.FC<SettingsProps> = ({ 
+  currentLang, 
+  onLanguageChange, 
+  notificationSetting,
+  onNotificationSettingChange,
+  onBack, 
+  onDeleteAccount, 
+  isAnonymous 
+}) => {
   const t = translations[currentLang];
+
+  const notificationOptions: { value: NotificationSetting; label: string }[] = [
+    { value: 'all', label: t.notifAll },
+    { value: '5km', label: t.notif5km },
+    { value: '1km', label: t.notif1km },
+    { value: 'mine', label: t.notifMine },
+    { value: 'none', label: t.notifNone },
+  ];
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-8 h-full overflow-y-auto pb-32">
@@ -34,6 +52,38 @@ const Settings: React.FC<SettingsProps> = ({ currentLang, onLanguageChange, onBa
         <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t.settings}</h2>
       </div>
 
+      {/* Notification Settings */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-2 ml-1">
+          <Bell size={18} className="text-blue-500" />
+          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">{t.notificationSettings}</h3>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+          {notificationOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => onNotificationSettingChange(option.value)}
+              className={`flex items-center justify-between p-5 rounded-3xl border-2 transition-all ${
+                notificationSetting === option.value 
+                  ? 'border-blue-500 bg-blue-50/50 shadow-md shadow-blue-100' 
+                  : 'border-white bg-white shadow-sm hover:border-slate-200'
+              }`}
+            >
+              <span className={`font-bold ${notificationSetting === option.value ? 'text-blue-900' : 'text-slate-700'}`}>
+                {option.label}
+              </span>
+              {notificationSetting === option.value && (
+                <div className="bg-blue-500 p-1 rounded-full text-white">
+                  <Check size={16} strokeWidth={3} />
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Language Settings */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-2 ml-1">
           <Globe size={18} className="text-orange-500" />

@@ -40,7 +40,17 @@ export const translations: Record<LanguageCode, any> = {
     noData: "Henüz veri yok",
     navMenu: "ANA",
     navMap: "HARİTA",
-    navSettings: "AYAR"
+    navSettings: "AYAR",
+    deleteMarker: "Bu Mamayı Sil",
+    deleteConfirm: "Bu mamayı silmek istediğinize emin misiniz?",
+    expiredNotification: "Mamanın Süresi Doldu!",
+    expiredNotificationDesc: "{type} için bıraktığınız mamanın üzerinden 24 saat geçti.",
+    notificationSettings: "BİLDİRİM AYARLARI",
+    notifAll: "Tüm Eski Mamalar",
+    notif5km: "5km Yakındaki Eski Mamalar",
+    notif1km: "1km Yakındaki Eski Mamalar",
+    notifMine: "Sadece Benim Mamalarım",
+    notifNone: "Bildirimleri Kapat"
   },
   en: {
     welcome: "Hello",
@@ -80,7 +90,17 @@ export const translations: Record<LanguageCode, any> = {
     noData: "No data yet",
     navMenu: "HOME",
     navMap: "MAP",
-    navSettings: "SETTINGS"
+    navSettings: "SETTINGS",
+    deleteMarker: "Delete This Food",
+    deleteConfirm: "Are you sure you want to delete this food?",
+    expiredNotification: "Food Expired!",
+    expiredNotificationDesc: "It has been 24 hours since you added the food for {type}.",
+    notificationSettings: "NOTIFICATION SETTINGS",
+    notifAll: "All Expired Food",
+    notif5km: "Expired Food within 5km",
+    notif1km: "Expired Food within 1km",
+    notifMine: "Only My Food",
+    notifNone: "Turn Off Notifications"
   },
   it: {
     welcome: "Ciao",

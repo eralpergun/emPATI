@@ -5,8 +5,8 @@ import MapView from './components/MapView';
 import Menu from './components/Menu';
 import Settings from './components/Settings';
 import BottomNav from './components/BottomNav';
-import { User, FoodMarker, LanguageCode } from './types';
-import { Cat, WifiOff } from 'lucide-react';
+import { User, FoodMarker, LanguageCode, NotificationSetting } from './types';
+import { Cat, WifiOff, X } from 'lucide-react';
 import { translations } from './constants/translations';
 import { db, ref, push, get, remove, query, limitToLast, isConfigured, set } from './lib/firebase';
 
@@ -21,6 +21,11 @@ const App: React.FC = () => {
   const [locationAccuracy, setLocationAccuracy] = useState<number>(Infinity);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
   const [language, setLanguage] = useState<LanguageCode>('tr');
+  const [notificationSetting, setNotificationSetting] = useState<NotificationSetting>(() => {
+    return (localStorage.getItem('empati_notif_setting') as NotificationSetting) || 'mine';
+  });
+  const [notifications, setNotifications] = useState<{id: string, type: string}[]>([]);
+  const notifiedMarkersRef = useRef<Set<string>>(new Set());
 
   const [showLanguagePrompt, setShowLanguagePrompt] = useState(false);
   const [suggestedLang, setSuggestedLang] = useState<LanguageCode | null>(null);
@@ -50,13 +55,19 @@ const App: React.FC = () => {
   const checkLocationLanguage = async (lat: number, lon: number) => {
     if (languageCheckDoneRef.current) return;
     
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     try {
       // Simple reverse geocoding to get country code
       const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
         headers: {
           'User-Agent': 'EmpatiApp/1.0'
-        }
+        },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         const data = await response.json();
@@ -74,10 +85,14 @@ const App: React.FC = () => {
           }
         }
       }
-    } catch (error) {
-      console.error("Language detection error:", error);
+    } catch (error: any) {
+      // Silently fail for non-critical language detection
+      if (error.name !== 'AbortError') {
+        console.warn("Language detection skipped due to network or service constraints.");
+      }
     } finally {
       languageCheckDoneRef.current = true;
+      clearTimeout(timeoutId);
     }
   };
 
@@ -227,6 +242,42 @@ const App: React.FC = () => {
     return () => clearInterval(intervalId);
   }, []);
 
+  // Check for expired markers based on user settings
+  useEffect(() => {
+    if (!user || user.name === '@@ANONYMOUS@@' || notificationSetting === 'none') return;
+
+    const now = Date.now();
+    
+    markers.forEach(marker => {
+      const hoursElapsed = (now - marker.timestamp) / (1000 * 60 * 60);
+      
+      if (hoursElapsed >= 24 && !notifiedMarkersRef.current.has(marker.id)) {
+        let shouldNotify = false;
+
+        if (notificationSetting === 'all') {
+          shouldNotify = true;
+        } else if (notificationSetting === 'mine') {
+          shouldNotify = marker.addedBy === user.name;
+        } else if (notificationSetting === '5km' && userLocation) {
+          const dist = calculateDistance(userLocation[0], userLocation[1], marker.lat, marker.lng);
+          if (dist <= 5000) shouldNotify = true;
+        } else if (notificationSetting === '1km' && userLocation) {
+          const dist = calculateDistance(userLocation[0], userLocation[1], marker.lat, marker.lng);
+          if (dist <= 1000) shouldNotify = true;
+        }
+
+        if (shouldNotify) {
+          const typeLabel = marker.type === 'cat' ? t.catFood : marker.type === 'dog' ? t.dogFood : t.bothFood;
+          setNotifications(prev => [...prev, { 
+            id: marker.id, 
+            type: typeLabel 
+          }]);
+          notifiedMarkersRef.current.add(marker.id);
+        }
+      }
+    });
+  }, [markers, user, t, notificationSetting, userLocation]);
+
   const stats = useMemo(() => {
     const now = Date.now();
     const nearbyMarkers = userLocation 
@@ -262,6 +313,11 @@ const App: React.FC = () => {
   const handleLanguageChange = (lang: LanguageCode) => {
     setLanguage(lang);
     localStorage.setItem('empati_lang', lang);
+  };
+
+  const handleNotificationSettingChange = (setting: NotificationSetting) => {
+    setNotificationSetting(setting);
+    localStorage.setItem('empati_notif_setting', setting);
   };
 
   const addMarker = async (lat: number, lng: number, type: 'cat' | 'dog' | 'both') => {
@@ -320,7 +376,16 @@ const App: React.FC = () => {
   };
 
   const handleDeleteMarker = async (id: string) => {
-    if (!isConfigured || !db || !user?.isAdmin) return;
+    if (!isConfigured || !db || !user) return;
+
+    const markerToDelete = markers.find(m => m.id === id);
+    if (!markerToDelete) return;
+
+    // Allow if admin OR if the user is the owner
+    if (!user.isAdmin && markerToDelete.addedBy !== user.name) {
+      alert("Bu mamayı silme yetkiniz yok.");
+      return;
+    }
 
     try {
       const markerRef = ref(db, `markers/${id}`);
@@ -385,6 +450,8 @@ const App: React.FC = () => {
           <Settings 
             currentLang={language} 
             onLanguageChange={handleLanguageChange} 
+            notificationSetting={notificationSetting}
+            onNotificationSettingChange={handleNotificationSettingChange}
             onBack={() => setView('menu')} 
             onDeleteAccount={handleDeleteAccount}
             isAnonymous={user.name === '@@ANONYMOUS@@' || !!user.isAdmin}
@@ -401,10 +468,37 @@ const App: React.FC = () => {
             isVisible={view === 'map'}
             isAdmin={user.isAdmin}
             onDeleteMarker={handleDeleteMarker}
+            currentUserName={user.name}
           />
         </div>
       </main>
       <BottomNav currentView={view as any} onViewChange={(v) => setView(v as View)} currentLang={language} />
+
+      {/* Notifications */}
+      <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[6000] w-full max-w-sm px-4 space-y-3 pointer-events-none">
+        {notifications.map((notif) => (
+          <div 
+            key={notif.id} 
+            className="bg-white/95 backdrop-blur-md border-l-4 border-red-500 p-4 rounded-2xl shadow-2xl flex items-start gap-3 animate-in slide-in-from-top-10 fade-in duration-500 pointer-events-auto"
+          >
+            <div className="bg-red-100 p-2 rounded-xl text-red-600">
+              <Cat size={20} />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-black text-slate-900">{t.expiredNotification}</h4>
+              <p className="text-xs text-slate-500 font-medium">
+                {t.expiredNotificationDesc.replace('{type}', notif.type)}
+              </p>
+            </div>
+            <button 
+              onClick={() => setNotifications(prev => prev.filter(n => n.id !== notif.id))}
+              className="text-slate-400 hover:text-slate-600 p-1"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ))}
+      </div>
 
       {/* Language Suggestion Modal */}
       {showLanguagePrompt && suggestedLang && (

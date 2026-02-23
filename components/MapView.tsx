@@ -18,6 +18,7 @@ interface MapViewProps {
   isVisible?: boolean;
   isAdmin?: boolean;
   onDeleteMarker?: (id: string) => void;
+  currentUserName?: string;
 }
 
 const locales: Record<LanguageCode, any> = {
@@ -32,7 +33,7 @@ const SUBDOMAINS = ['mt0', 'mt1', 'mt2', 'mt3'];
 const CAT_PNG = "https://cdn-icons-png.flaticon.com/512/616/616430.png";
 const DOG_PNG = "https://cdn-icons-png.flaticon.com/512/616/616554.png";
 
-const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible, isAdmin, onDeleteMarker }) => {
+const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible, isAdmin, onDeleteMarker, currentUserName }) => {
   const mapRef = useRef<L.Map>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [initialCenterDone, setInitialCenterDone] = useState(false);
@@ -429,18 +430,18 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
                         <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span>
                       </div>
                     </div>
-                    {isAdmin && (
+                    {(isAdmin || marker.addedBy === currentUserName) && (
                       <div className="mt-4 pt-4 border-t border-slate-100">
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (window.confirm('Bu mamayı silmek istediğinize emin misiniz?')) {
+                            if (window.confirm(t.deleteConfirm)) {
                               onDeleteMarker?.(marker.id);
                             }
                           }}
                           className="w-full bg-red-500 text-white py-2 px-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
                         >
-                          Bu Mamayı Sil
+                          {t.deleteMarker}
                         </button>
                       </div>
                     )}
