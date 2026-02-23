@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import Login from './components/Login';
 import MapView from './components/MapView';
 import Menu from './components/Menu';
@@ -436,6 +437,7 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+      <SpeedInsights />
     </div>
   );
 };
