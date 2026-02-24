@@ -34,7 +34,8 @@ const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, 
   const leaderboard = useMemo(() => {
     const counts: Record<string, number> = {};
     markers.forEach(m => {
-      const name = m.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : m.addedBy;
+      const rawName = m.addedBy;
+      const name = (!rawName || rawName === '@@ANONYMOUS@@') ? t.anonymousUser : rawName;
       counts[name] = (counts[name] || 0) + 1;
     });
     
@@ -174,7 +175,7 @@ const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, 
             </div>
             <div>
               <p className="text-sm text-slate-800 font-bold">
-                {t.lastAddedBy.replace('{user}', stats.lastAdded.addedBy)}
+                {t.lastAddedBy.replace('{user}', (!stats.lastAdded.addedBy || stats.lastAdded.addedBy === '@@ANONYMOUS@@') ? t.anonymousUser : stats.lastAdded.addedBy)}
               </p>
               <p className="text-xs text-slate-400 mt-1 font-bold">
                 {formatDistanceToNow(stats.lastAdded.timestamp, { addSuffix: true, locale } as any)}

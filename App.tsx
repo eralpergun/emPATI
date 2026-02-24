@@ -404,13 +404,19 @@ const App: React.FC = () => {
     try {
       const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
       
-      // Anonymize user's markers
+      // Fetch all markers to anonymize (not just the last 100 in state)
+      const markersRef = ref(db, 'markers');
+      const snapshot = await get(markersRef);
       const updates: Record<string, any> = {};
-      markers.forEach(marker => {
-        if (marker.addedBy === user.name) {
-          updates[`markers/${marker.id}/addedBy`] = '@@ANONYMOUS@@';
-        }
-      });
+      
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          const markerData = child.val();
+          if (markerData.addedBy === user.name) {
+            updates[`markers/${child.key}/addedBy`] = '@@ANONYMOUS@@';
+          }
+        });
+      }
 
       if (Object.keys(updates).length > 0) {
         await update(ref(db), updates);

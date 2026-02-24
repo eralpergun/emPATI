@@ -412,7 +412,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
                       </div>
                       <div>
                         <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.addedBy}</p>
-                        <p className="text-lg font-black text-slate-800 leading-none">{marker.addedBy === '@@ANONYMOUS@@' ? t.anonymousUser : marker.addedBy}</p>
+                        <p className="text-lg font-black text-slate-800 leading-none">{(!marker.addedBy || marker.addedBy === '@@ANONYMOUS@@') ? t.anonymousUser : marker.addedBy}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-5">
