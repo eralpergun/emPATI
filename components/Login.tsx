@@ -116,19 +116,20 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-orange-500 rounded-[2.5rem] text-white mb-6 shadow-2xl shadow-orange-100 animate-bounce-slow">
-            <Cat size={48} strokeWidth={2.5} />
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center p-4 py-8 overflow-y-auto">
+      <div className="max-w-md w-full my-auto py-4">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 bg-orange-500 rounded-[2rem] sm:rounded-[2.5rem] text-white mb-4 sm:mb-6 shadow-2xl shadow-orange-100 animate-bounce-slow">
+            <Cat className="w-10 h-10 sm:w-12 sm:h-12" strokeWidth={2.5} />
           </div>
-          <h1 className="text-5xl font-black text-slate-900 mb-3 tracking-tighter">emPATİ</h1>
-          <p className="text-slate-500 text-lg font-medium">
+          <h1 className="text-4xl sm:text-5xl font-black text-slate-900 mb-1 tracking-tighter">emPATİ</h1>
+          <p className="text-orange-600 font-black text-[10px] sm:text-sm uppercase tracking-[0.2em] mb-2 sm:mb-4">İyiliği Haritaya İşle!</p>
+          <p className="text-slate-500 text-base sm:text-lg font-medium">
             {mode === 'admin' ? 'Yönetici Girişi' : (mode === 'register' ? 'Hesap Oluştur' : t.loginTitle)}
           </p>
         </div>
 
-        <div className="bg-white p-8 rounded-[3rem] shadow-2xl border border-slate-100 space-y-6">
+        <div className="bg-white p-6 sm:p-8 rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl border border-slate-100 space-y-5 sm:space-y-6">
           {mode === 'admin' ? (
             <form onSubmit={handleAdminLogin} className="space-y-4">
               <div>
@@ -141,14 +142,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
                     setError('');
                   }}
                   placeholder="Yönetici Şifresi"
-                  className="w-full px-6 py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold"
+                  className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold"
                 />
                 {error && <p className="text-red-500 text-sm mt-2 ml-2 font-bold">{error}</p>}
               </div>
               <button
                 type="submit"
                 disabled={!adminPassword}
-                className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-5 rounded-[1.5rem] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 group text-lg"
+                className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-4 sm:py-5 rounded-[1.5rem] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 group text-lg"
               >
                 Giriş Yap
                 <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
@@ -163,7 +164,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Kullanıcı Adı"
-                  className="w-full px-6 py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold mb-4"
+                  className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold mb-4"
                 />
                 <input
                   type="password"
@@ -171,14 +172,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Şifre"
-                  className="w-full px-6 py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold"
+                  className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold"
                 />
                 {error && <p className="text-red-500 text-sm mt-2 ml-2 font-bold">{error}</p>}
               </div>
               <button
                 type="submit"
                 disabled={loading || !username || !password}
-                className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-5 rounded-[1.5rem] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 group text-lg"
+                className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-4 sm:py-5 rounded-[1.5rem] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 group text-lg"
               >
                 {loading ? 'İşleniyor...' : (mode === 'register' ? 'Kayıt Ol' : 'Giriş Yap')}
                 <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
