@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationAccuracy, setLocationAccuracy] = useState<number>(Infinity);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
+  const [useHighAccuracy, setUseHighAccuracy] = useState(true);
   const [language, setLanguage] = useState<LanguageCode>('tr');
   const [notificationSetting, setNotificationSetting] = useState<NotificationSetting>(() => {
     return (localStorage.getItem('empati_notif_setting') as NotificationSetting) || 'mine';
@@ -136,21 +137,21 @@ const App: React.FC = () => {
     }
 
     const geoOptions: PositionOptions = {
-      enableHighAccuracy: true,
-      timeout: 10000, 
-      maximumAge: 0 
+      enableHighAccuracy: useHighAccuracy,
+      timeout: 20000, 
+      maximumAge: 10000 
     };
 
     const handleSuccess = (pos: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = pos.coords;
       
-      // Ignore extremely poor accuracy (over 5km)
-      if (accuracy > 5000) return;
+      // Ignore extremely poor accuracy (over 10km for PCs)
+      if (accuracy > 10000) return;
 
       setUserLocation(prevLoc => {
         if (!prevLoc) {
           setLocationAccuracy(accuracy);
-          setLocationStatus(accuracy < 40 ? 'precise' : 'approximate');
+          setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
           return [latitude, longitude];
         }
 
@@ -163,7 +164,7 @@ const App: React.FC = () => {
         // 3. It's been more than 5 seconds since last update
         if (accuracy < locationAccuracy * 0.8 || dist > 5 || (now - lastUpdateRef.current > 5000)) {
           setLocationAccuracy(accuracy);
-          setLocationStatus(accuracy < 40 ? 'precise' : 'approximate');
+          setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
           lastUpdateRef.current = now;
           return [latitude, longitude];
         }
@@ -173,27 +174,29 @@ const App: React.FC = () => {
     };
 
     const handleError = (err: GeolocationPositionError) => {
-      console.warn("Geolocation error:", err.message);
+      // Only log if it's not a timeout (to reduce noise) or if it's a permanent error
+      if (err.code !== err.TIMEOUT) {
+        console.warn("Geolocation error:", err.message);
+      }
+
       if (err.code === err.PERMISSION_DENIED) {
         setLocationStatus('denied');
-      } else {
-        // Fallback: try with lower accuracy if high accuracy fails
-        navigator.geolocation.getCurrentPosition(handleSuccess, () => setLocationStatus('error'), {
-           enableHighAccuracy: false,
-           timeout: 10000,
-           maximumAge: 5000
-        });
+      } else if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
+        // If high accuracy fails, switch to low accuracy
+        if (useHighAccuracy) {
+          console.log("Switching to low accuracy location mode...");
+          setUseHighAccuracy(false);
+        } else {
+          setLocationStatus('error');
+        }
       }
     };
-
-    // Priming: get current position immediately
-    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, geoOptions);
 
     // Continuous watching
     const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, geoOptions);
     
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []); // Empty dependency array to prevent reset loops
+  }, [useHighAccuracy]); // Re-run when accuracy mode changes
 
   useEffect(() => {
     const savedUser = localStorage.getItem('empati_user');
