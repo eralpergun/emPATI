@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Language, LanguageCode, NotificationSetting } from '../types';
-import { Globe, Check, Trash2, Bell } from 'lucide-react';
+import { Globe, Check, Trash2, Bell, Users, Search, Eye, EyeOff, ShieldAlert, UserCircle } from 'lucide-react';
 import { translations } from '../constants/translations';
+import { db, ref, get, remove, update, push, set } from '../lib/firebase';
 
 interface SettingsProps {
   currentLang: LanguageCode;
@@ -12,6 +13,21 @@ interface SettingsProps {
   onBack: () => void;
   onDeleteAccount: () => void;
   isAnonymous: boolean;
+  isAdmin?: boolean;
+  userName?: string;
+}
+
+interface AdminData {
+  id: string;
+  name: string;
+  key: string;
+}
+
+interface UserData {
+  username: string;
+  password?: string;
+  createdAt: number;
+  lastActivity: number;
 }
 
 const languages: Language[] = [
@@ -34,9 +50,155 @@ const Settings: React.FC<SettingsProps> = ({
   onNotificationSettingChange,
   onBack, 
   onDeleteAccount, 
-  isAnonymous 
+  isAnonymous,
+  isAdmin,
+  userName
 }) => {
   const t = translations[currentLang];
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [admins, setAdmins] = useState<AdminData[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(false);
+  const [loadingAdmins, setLoadingAdmins] = useState(false);
+  
+  // Admin Management State
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminKey, setNewAdminKey] = useState('');
+  const [showAdminForm, setShowAdminForm] = useState(false);
+  
+  const isSuperAdmin = userName?.trim().toLowerCase() === 'eralp ergün'.toLowerCase();
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchUsers();
+      if (isSuperAdmin) {
+        fetchAdmins();
+      }
+    }
+  }, [isAdmin, userName, isSuperAdmin]);
+
+  const fetchAdmins = async () => {
+    if (!db) return;
+    setLoadingAdmins(true);
+    try {
+      const adminsRef = ref(db, 'admins');
+      const snapshot = await get(adminsRef);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const adminList = Object.entries(data).map(([id, details]: [string, any]) => ({
+          id,
+          ...details
+        }));
+        setAdmins(adminList);
+      }
+    } catch (error) {
+      console.error("Error fetching admins:", error);
+    } finally {
+      setLoadingAdmins(false);
+    }
+  };
+
+  const handleAddAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db || !newAdminName || !newAdminKey) return;
+
+    try {
+      const adminsRef = ref(db, 'admins');
+      const newAdminRef = push(adminsRef);
+      await set(newAdminRef, {
+        name: newAdminName,
+        key: newAdminKey
+      });
+      setNewAdminName('');
+      setNewAdminKey('');
+      setShowAdminForm(false);
+      fetchAdmins();
+      alert("Yeni yönetici başarıyla eklendi.");
+    } catch (error) {
+      console.error("Error adding admin:", error);
+      alert("Yönetici eklenirken bir hata oluştu.");
+    }
+  };
+
+  const handleDeleteAdmin = async (id: string, name: string) => {
+    if (!db || name === 'Eralp Ergün') {
+      alert("Bu yönetici silinemez.");
+      return;
+    }
+    if (!window.confirm(`${name} yöneticisini silmek istediğinize emin misiniz?`)) return;
+
+    try {
+      await remove(ref(db, `admins/${id}`));
+      fetchAdmins();
+      alert("Yönetici başarıyla silindi.");
+    } catch (error) {
+      console.error("Error deleting admin:", error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    if (!db) return;
+    setLoading(true);
+    try {
+      const usersRef = ref(db, 'users');
+      const snapshot = await get(usersRef);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const userList = Object.entries(data).map(([username, details]: [string, any]) => ({
+          username,
+          ...details
+        }));
+        setUsers(userList);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (username: string) => {
+    if (!db || !window.confirm(`${username} kullanıcısını silmek istediğinize emin misiniz?`)) return;
+    
+    try {
+      // Anonymize user's markers first
+      const markersRef = ref(db, 'markers');
+      const snapshot = await get(markersRef);
+      const updates: Record<string, any> = {};
+      
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          const markerData = child.val();
+          if (markerData.addedBy === username) {
+            updates[`markers/${child.key}/addedBy`] = '@@ANONYMOUS@@';
+          }
+        });
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await update(ref(db), updates);
+      }
+
+      await remove(ref(db, `users/${username}`));
+      setUsers(prev => prev.filter(u => u.username !== username));
+      alert("Kullanıcı başarıyla silindi.");
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      alert("Kullanıcı silinirken bir hata oluştu.");
+    }
+  };
+
+  const togglePasswordVisibility = (username: string) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [username]: !prev[username]
+    }));
+  };
+
+  const filteredUsers = users.filter(u => 
+    u.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const notificationOptions: { value: NotificationSetting; label: string }[] = [
     { value: 'all', label: t.notifAll },
@@ -117,7 +279,178 @@ const Settings: React.FC<SettingsProps> = ({
         </div>
       </div>
 
-      {!isAnonymous && (
+      {/* Admin User Management */}
+      {isAdmin && (
+        <div className="space-y-6 pt-8 border-t border-slate-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 ml-1">
+              <Users size={20} className="text-indigo-600" />
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Kullanıcı Yönetimi</h3>
+            </div>
+            <button 
+              onClick={fetchUsers}
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+            >
+              Yenile
+            </button>
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text"
+              placeholder="Kullanıcı ara..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border-2 border-slate-100 focus:border-indigo-500 transition-all outline-none font-medium"
+            />
+          </div>
+
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Yükleniyor...</p>
+              </div>
+            ) : filteredUsers.length > 0 ? (
+              filteredUsers.map((u) => (
+                <div key={u.username} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                        <ShieldAlert size={20} />
+                      </div>
+                      <div>
+                        <p className="font-black text-slate-900 leading-none">{u.username}</p>
+                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
+                          {new Date(u.createdAt).toLocaleDateString()} tarihinde katıldı
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteUser(u.username)}
+                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Şifre:</span>
+                      <span className="font-mono font-bold text-slate-700">
+                        {showPasswords[u.username] ? u.password : '••••••••'}
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => togglePasswordVisibility(u.username)}
+                      className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      {showPasswords[u.username] ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
+                <p className="text-sm text-slate-400 font-medium">Kullanıcı bulunamadı.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Super Admin Management (Eralp Only) */}
+      {isSuperAdmin && (
+        <div className="space-y-6 pt-8 border-t border-slate-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 ml-1">
+              <ShieldAlert size={20} className="text-orange-600" />
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Yönetici Yönetimi</h3>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={fetchAdmins}
+                className="text-xs font-bold text-orange-600 hover:text-orange-800 transition-colors"
+              >
+                Yenile
+              </button>
+              <button 
+                onClick={() => setShowAdminForm(!showAdminForm)}
+                className="bg-orange-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-orange-600 transition-colors"
+              >
+                {showAdminForm ? 'İptal' : 'Yönetici Ekle'}
+              </button>
+            </div>
+          </div>
+
+          {showAdminForm && (
+            <form onSubmit={handleAddAdmin} className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+              <input 
+                type="text"
+                placeholder="Yönetici Adı Soyadı"
+                value={newAdminName}
+                onChange={(e) => setNewAdminName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-white border border-orange-200 focus:border-orange-500 outline-none font-bold"
+                required
+              />
+              <input 
+                type="text"
+                placeholder="Giriş Şifresi (Key)"
+                value={newAdminKey}
+                onChange={(e) => setNewAdminKey(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-white border border-orange-200 focus:border-orange-500 outline-none font-bold"
+                required
+              />
+              <button 
+                type="submit"
+                className="w-full bg-orange-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-orange-200"
+              >
+                Kaydet
+              </button>
+            </form>
+          )}
+
+          <div className="space-y-3">
+            {loadingAdmins ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Yükleniyor...</p>
+              </div>
+            ) : admins.length > 0 ? (
+              admins.map((admin) => (
+                <div key={admin.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+                      <UserCircle size={20} />
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900 leading-none">{admin.name}</p>
+                      <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
+                        Key: {admin.key}
+                      </p>
+                    </div>
+                  </div>
+                  {admin.name.trim().toLowerCase() !== 'eralp ergün'.toLowerCase() && (
+                    <button 
+                      onClick={() => handleDeleteAdmin(admin.id, admin.name)}
+                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
+                <p className="text-sm text-slate-400 font-medium">Yönetici bulunamadı.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!isAnonymous && !isAdmin && (
         <div className="space-y-4 pt-8 border-t border-slate-100">
            <div className="flex items-center gap-2 mb-2 ml-1">
             <Trash2 size={18} className="text-red-500" />

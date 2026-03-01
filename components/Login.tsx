@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, LanguageCode } from '../types';
 import { Cat, ArrowRight, UserCircle, Lock, UserPlus, LogIn } from 'lucide-react';
 import { translations } from '../constants/translations';
-import { db, ref, get, set, remove } from '../lib/firebase';
+import { db, ref, get, set, remove, push } from '../lib/firebase';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -44,19 +44,48 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
     cleanupInactiveUsers();
   }, []);
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const admins = {
-      'eralp': 'Eralp Ergün',
-      'sabri': 'Sabri Ahirzaman',
-      'nehir': 'Nehir Çatalbaş',
-      'tibet': 'Tibet Şahin'
-    };
+    setError('');
+    setLoading(true);
 
-    if (admins[adminPassword as keyof typeof admins]) {
-      onLogin({ name: admins[adminPassword as keyof typeof admins], isAdmin: true });
-    } else {
-      setError('Hatalı şifre!');
+    try {
+      const adminsRef = ref(db, 'admins');
+      const snapshot = await get(adminsRef);
+      
+      let adminList: Record<string, string> = {};
+      
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        Object.values(data).forEach((admin: any) => {
+          adminList[admin.key] = admin.name;
+        });
+      } else {
+        // Initialize with defaults if empty
+        const defaults = {
+          'eralp': 'Eralp Ergün',
+          'sabri': 'Sabri Ahirzaman',
+          'nehir': 'Nehir Çatalbaş',
+          'tibet': 'Tibet Şahin'
+        };
+        
+        for (const [key, name] of Object.entries(defaults)) {
+          const newAdminRef = push(adminsRef);
+          await set(newAdminRef, { name, key });
+        }
+        adminList = defaults;
+      }
+
+      if (adminList[adminPassword]) {
+        onLogin({ name: adminList[adminPassword], isAdmin: true });
+      } else {
+        setError('Hatalı şifre!');
+      }
+    } catch (err) {
+      console.error("Admin login error:", err);
+      setError('Bir hata oluştu.');
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -476,7 +476,9 @@ const App: React.FC = () => {
             onNotificationSettingChange={handleNotificationSettingChange}
             onBack={() => setView('menu')} 
             onDeleteAccount={handleDeleteAccount}
-            isAnonymous={user.name === '@@ANONYMOUS@@' || !!user.isAdmin}
+            isAnonymous={user.name === '@@ANONYMOUS@@'}
+            isAdmin={!!user.isAdmin}
+            userName={user.name}
           />
         </div>
         <div className={`absolute inset-0 z-10 transition-opacity duration-300 ${view === 'map' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
