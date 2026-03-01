@@ -4,6 +4,7 @@ import { Language, LanguageCode, NotificationSetting } from '../types';
 import { Globe, Check, Trash2, Bell, Users, Search, Eye, EyeOff, ShieldAlert, UserCircle } from 'lucide-react';
 import { translations } from '../constants/translations';
 import { db, ref, get, remove, update, push, set } from '../lib/firebase';
+import ConfirmModal from './ConfirmModal';
 
 interface SettingsProps {
   currentLang: LanguageCode;
@@ -62,6 +63,23 @@ const Settings: React.FC<SettingsProps> = ({
   const [loading, setLoading] = useState(false);
   const [loadingAdmins, setLoadingAdmins] = useState(false);
   
+  // Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    onConfirm: () => void;
+    type: 'danger' | 'warning';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: '',
+    onConfirm: () => {},
+    type: 'danger'
+  });
+
   // Admin Management State
   const [newAdminName, setNewAdminName] = useState('');
   const [newAdminKey, setNewAdminKey] = useState('');
@@ -126,15 +144,23 @@ const Settings: React.FC<SettingsProps> = ({
       alert("Bu yönetici silinemez.");
       return;
     }
-    if (!window.confirm(`${name} yöneticisini silmek istediğinize emin misiniz?`)) return;
 
-    try {
-      await remove(ref(db, `admins/${id}`));
-      fetchAdmins();
-      alert("Yönetici başarıyla silindi.");
-    } catch (error) {
-      console.error("Error deleting admin:", error);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Yöneticiyi Sil',
+      message: `${name} yöneticisini silmek istediğinize emin misiniz?`,
+      confirmText: 'Evet, Sil',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await remove(ref(db, `admins/${id}`));
+          fetchAdmins();
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        } catch (error) {
+          console.error("Error deleting admin:", error);
+        }
+      }
+    });
   };
 
   const fetchUsers = async () => {
@@ -159,34 +185,43 @@ const Settings: React.FC<SettingsProps> = ({
   };
 
   const handleDeleteUser = async (username: string) => {
-    if (!db || !window.confirm(`${username} kullanıcısını silmek istediğinize emin misiniz?`)) return;
+    if (!db) return;
     
-    try {
-      // Anonymize user's markers first
-      const markersRef = ref(db, 'markers');
-      const snapshot = await get(markersRef);
-      const updates: Record<string, any> = {};
-      
-      if (snapshot.exists()) {
-        snapshot.forEach((child) => {
-          const markerData = child.val();
-          if (markerData.addedBy === username) {
-            updates[`markers/${child.key}/addedBy`] = '@@ANONYMOUS@@';
+    setConfirmModal({
+      isOpen: true,
+      title: 'Kullanıcıyı Sil',
+      message: `${username} kullanıcısını silmek istediğinize emin misiniz?`,
+      confirmText: 'Evet, Sil',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          // Anonymize user's markers first
+          const markersRef = ref(db, 'markers');
+          const snapshot = await get(markersRef);
+          const updates: Record<string, any> = {};
+          
+          if (snapshot.exists()) {
+            snapshot.forEach((child) => {
+              const markerData = child.val();
+              if (markerData.addedBy === username) {
+                updates[`markers/${child.key}/addedBy`] = '@@ANONYMOUS@@';
+              }
+            });
           }
-        });
-      }
 
-      if (Object.keys(updates).length > 0) {
-        await update(ref(db), updates);
-      }
+          if (Object.keys(updates).length > 0) {
+            await update(ref(db), updates);
+          }
 
-      await remove(ref(db, `users/${username}`));
-      setUsers(prev => prev.filter(u => u.username !== username));
-      alert("Kullanıcı başarıyla silindi.");
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      alert("Kullanıcı silinirken bir hata oluştu.");
-    }
+          await remove(ref(db, `users/${username}`));
+          setUsers(prev => prev.filter(u => u.username !== username));
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        } catch (error) {
+          console.error("Error deleting user:", error);
+          alert("Kullanıcı silinirken bir hata oluştu.");
+        }
+      }
+    });
   };
 
   const togglePasswordVisibility = (username: string) => {
@@ -459,9 +494,17 @@ const Settings: React.FC<SettingsProps> = ({
           
           <button
             onClick={() => {
-              if (window.confirm('Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
-                onDeleteAccount();
-              }
+              setConfirmModal({
+                isOpen: true,
+                title: 'Hesabımı Sil',
+                message: 'Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+                confirmText: 'Evet, Sil',
+                type: 'danger',
+                onConfirm: () => {
+                  onDeleteAccount();
+                  setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                }
+              });
             }}
             className="w-full flex items-center justify-between p-5 rounded-3xl border-2 border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-200 transition-all font-bold"
           >
@@ -470,6 +513,17 @@ const Settings: React.FC<SettingsProps> = ({
           </button>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        cancelText="İptal"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        type={confirmModal.type}
+      />
     </div>
   );
 };

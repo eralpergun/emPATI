@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, LanguageCode } from '../types';
-import { Cat, ArrowRight, UserCircle, Lock, UserPlus, LogIn } from 'lucide-react';
+import { Cat, ArrowRight, UserCircle, Lock, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
 import { translations } from '../constants/translations';
 import { db, ref, get, set, remove, push } from '../lib/firebase';
 
@@ -13,6 +13,8 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [mode, setMode] = useState<'login' | 'register' | 'admin'>('login');
   const [adminPassword, setAdminPassword] = useState('');
   const [error, setError] = useState('');
@@ -96,6 +98,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
 
     if (!username.trim() || !password.trim()) {
       setError('Kullanıcı adı ve şifre gereklidir.');
+      setLoading(false);
+      return;
+    }
+
+    if (mode === 'register' && password !== confirmPassword) {
+      setError('Şifreler eşleşmiyor.');
       setLoading(false);
       return;
     }
@@ -187,27 +195,53 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
           ) : (
             <form onSubmit={handleUserAuth} className="space-y-4">
               <div>
-                <input
-                  type="text"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Kullanıcı Adı"
-                  className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold mb-4"
-                />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Şifre"
-                  className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold"
-                />
+                <div className="relative mb-4">
+                  <input
+                    type="text"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Kullanıcı Adı"
+                    className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold"
+                  />
+                </div>
+                
+                <div className="relative mb-4">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Şifre"
+                    className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold pr-14"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+
+                {mode === 'register' && (
+                  <div className="relative mb-4">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Şifreyi Onayla"
+                      className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold pr-14"
+                    />
+                  </div>
+                )}
+                
                 {error && <p className="text-red-500 text-sm mt-2 ml-2 font-bold">{error}</p>}
               </div>
               <button
                 type="submit"
-                disabled={loading || !username || !password}
+                disabled={loading || !username || !password || (mode === 'register' && !confirmPassword)}
                 className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-4 sm:py-5 rounded-[1.5rem] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 group text-lg"
               >
                 {loading ? 'İşleniyor...' : (mode === 'register' ? 'Kayıt Ol' : 'Giriş Yap')}
@@ -226,6 +260,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
                     setError('');
                     setUsername('');
                     setPassword('');
+                    setConfirmPassword('');
+                    setShowPassword(false);
                   }}
                   className="w-full text-slate-600 hover:text-slate-900 font-bold py-3 transition-colors flex items-center justify-center gap-2"
                 >

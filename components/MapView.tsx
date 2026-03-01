@@ -5,8 +5,9 @@ import L from 'leaflet';
 import { FoodMarker, LanguageCode } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS, it, fr, de, es, pt, ru, ja, arSA } from 'date-fns/locale';
-import { User, Clock, Navigation2, MapPin, AlertCircle, ArrowRight } from 'lucide-react';
+import { User, Clock, Navigation2, MapPin, AlertCircle, ArrowRight, Trash2 } from 'lucide-react';
 import { translations } from '../constants/translations';
+import ConfirmModal from './ConfirmModal';
 
 interface MapViewProps {
   markers: FoodMarker[];
@@ -41,6 +42,13 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   
   const [forceOpen, setForceOpen] = useState(false);
   const [showSkipButton, setShowSkipButton] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    markerId: string | null;
+  }>({
+    isOpen: false,
+    markerId: null
+  });
 
   const defaultPosition: [number, number] = [41.0082, 28.9784];
   const t = translations[currentLang];
@@ -435,12 +443,14 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (window.confirm(t.deleteConfirm)) {
-                              onDeleteMarker?.(marker.id);
-                            }
+                            setConfirmModal({
+                              isOpen: true,
+                              markerId: marker.id
+                            });
                           }}
-                          className="w-full bg-red-500 text-white py-2 px-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
+                          className="w-full bg-red-500 text-white py-2 px-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg shadow-red-200 flex items-center justify-center gap-2"
                         >
+                          <Trash2 size={14} />
                           {t.deleteMarker}
                         </button>
                       </div>
@@ -452,6 +462,22 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           })
         )}
       </MapContainer>
+
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={t.deleteMarker || "Mamayı Sil"}
+        message={t.deleteConfirm || "Bu mama işaretini silmek istediğinize emin misiniz?"}
+        confirmText="Evet, Sil"
+        cancelText="İptal"
+        onConfirm={() => {
+          if (confirmModal.markerId) {
+            onDeleteMarker?.(confirmModal.markerId);
+          }
+          setConfirmModal({ isOpen: false, markerId: null });
+        }}
+        onCancel={() => setConfirmModal({ isOpen: false, markerId: null })}
+        type="danger"
+      />
     </div>
   );
 };
