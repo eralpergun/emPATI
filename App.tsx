@@ -315,23 +315,30 @@ const App: React.FC = () => {
     localStorage.removeItem('empati_user');
   };
 
-  // Listen for account deletion
+  // Check for account deletion every 10 seconds
   useEffect(() => {
     if (!user || user.name === '@@ANONYMOUS@@' || user.isAdmin || !db) return;
 
     const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
     const userRef = ref(db, `users/${safeUsername}`);
 
-    // This listener will trigger whenever the user's data changes
-    const unsubscribe = onValue(userRef, (snapshot) => {
-      // If snapshot doesn't exist, it means the account was deleted
-      if (!snapshot.exists()) {
-        handleLogout();
-        setShowAccountDeletedModal(true);
+    const checkAccount = async () => {
+      try {
+        const snapshot = await get(userRef);
+        if (!snapshot.exists()) {
+          handleLogout();
+          setShowAccountDeletedModal(true);
+        }
+      } catch (error) {
+        console.error("Account check error:", error);
       }
-    });
+    };
 
-    return () => unsubscribe();
+    // Initial check
+    checkAccount();
+
+    const intervalId = setInterval(checkAccount, 10000);
+    return () => clearInterval(intervalId);
   }, [user, db]);
 
   const handleLanguageChange = (lang: LanguageCode) => {
