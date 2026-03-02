@@ -8,7 +8,8 @@ import BottomNav from './components/BottomNav';
 import { User, FoodMarker, LanguageCode, NotificationSetting } from './types';
 import { Cat, WifiOff, X } from 'lucide-react';
 import { translations } from './constants/translations';
-import { db, ref, push, get, remove, query, limitToLast, isConfigured, set, update } from './lib/firebase';
+import { db, ref, push, get, remove, query, limitToLast, isConfigured, set, update, onValue } from './lib/firebase';
+import ConfirmModal from './components/ConfirmModal';
 
 type View = 'login' | 'menu' | 'map' | 'settings';
 type LocationStatus = 'searching' | 'precise' | 'approximate' | 'denied' | 'error';
@@ -31,6 +32,7 @@ const App: React.FC = () => {
   const [showLanguagePrompt, setShowLanguagePrompt] = useState(false);
   const [suggestedLang, setSuggestedLang] = useState<LanguageCode | null>(null);
   const languageCheckDoneRef = useRef(false);
+  const [showAccountDeletedModal, setShowAccountDeletedModal] = useState(false);
 
   const t = translations[language];
   const lastUpdateRef = useRef<number>(0);
@@ -313,6 +315,25 @@ const App: React.FC = () => {
     localStorage.removeItem('empati_user');
   };
 
+  // Listen for account deletion
+  useEffect(() => {
+    if (!user || user.name === '@@ANONYMOUS@@' || user.isAdmin || !db) return;
+
+    const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
+    const userRef = ref(db, `users/${safeUsername}`);
+
+    // This listener will trigger whenever the user's data changes
+    const unsubscribe = onValue(userRef, (snapshot) => {
+      // If snapshot doesn't exist, it means the account was deleted
+      if (!snapshot.exists()) {
+        handleLogout();
+        setShowAccountDeletedModal(true);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user, db]);
+
   const handleLanguageChange = (lang: LanguageCode) => {
     setLanguage(lang);
     localStorage.setItem('empati_lang', lang);
@@ -554,6 +575,17 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Account Deleted Modal */}
+      <ConfirmModal 
+        isOpen={showAccountDeletedModal}
+        title="Hesabınız Silindi"
+        message="Hesabınız bir yönetici tarafından silinmiştir. Daha fazla bilgi için destek ile iletişime geçebilirsiniz."
+        confirmText="Tamam"
+        cancelText=""
+        onConfirm={() => setShowAccountDeletedModal(false)}
+        onCancel={() => setShowAccountDeletedModal(false)}
+        type="danger"
+      />
     </div>
   );
 };
