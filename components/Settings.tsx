@@ -74,6 +74,8 @@ const Settings: React.FC<SettingsProps> = ({
   const [users, setUsers] = useState<UserData[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 5;
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [loadingAdmins, setLoadingAdmins] = useState(false);
@@ -250,6 +252,9 @@ const Settings: React.FC<SettingsProps> = ({
     u.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * usersPerPage, currentPage * usersPerPage);
+
   const notificationOptions: { value: NotificationSetting; label: string }[] = [
     { value: 'all', label: t.notifAll },
     { value: '5km', label: t.notif5km },
@@ -363,47 +368,71 @@ const Settings: React.FC<SettingsProps> = ({
                 <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Yükleniyor...</p>
               </div>
-            ) : filteredUsers.length > 0 ? (
-              filteredUsers.map((u) => (
-                <div key={u.username} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                        <ShieldAlert size={20} />
+            ) : paginatedUsers.length > 0 ? (
+              <>
+                {paginatedUsers.map((u) => (
+                  <div key={u.username} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                          <ShieldAlert size={20} />
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 leading-none">{u.username}</p>
+                          <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
+                            {new Date(u.createdAt).toLocaleDateString()} tarihinde katıldı
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-black text-slate-900 leading-none">{u.username}</p>
-                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
-                          {new Date(u.createdAt).toLocaleDateString()} tarihinde katıldı
-                        </p>
-                      </div>
+                      <button 
+                        onClick={() => handleDeleteUser(u.username)}
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      >
+                        <Trash2 size={20} />
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => handleDeleteUser(u.username)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+
+                    <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Şifre:</span>
+                        <span className="font-mono font-bold text-slate-700">
+                          ••••••••
+                        </span>
+                      </div>
+                      {onLoginAsUser && (
+                        <button 
+                          onClick={() => onLoginAsUser(u.username)}
+                          className="px-3 py-1.5 bg-indigo-100 text-indigo-600 hover:bg-indigo-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                        >
+                          Giriş Yap
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-4">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold disabled:opacity-50"
                     >
-                      <Trash2 size={20} />
+                      Önceki
+                    </button>
+                    <span className="text-xs font-bold text-slate-600">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold disabled:opacity-50"
+                    >
+                      Sonraki
                     </button>
                   </div>
-
-                  <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Şifre:</span>
-                      <span className="font-mono font-bold text-slate-700">
-                        ••••••••
-                      </span>
-                    </div>
-                    {onLoginAsUser && (
-                      <button 
-                        onClick={() => onLoginAsUser(u.username)}
-                        className="px-3 py-1.5 bg-indigo-100 text-indigo-600 hover:bg-indigo-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
-                      >
-                        Giriş Yap
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
+                )}
+              </>
             ) : (
               <div className="text-center py-8 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
                 <p className="text-sm text-slate-400 font-medium">Kullanıcı bulunamadı.</p>

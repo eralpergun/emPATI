@@ -41,6 +41,7 @@ const App: React.FC = () => {
   const [banCountdown, setBanCountdown] = useState(10);
   const [banMessage, setBanMessage] = useState<string | null>(null);
   const isBanProcessStartedRef = useRef(false);
+  const banTimerRef = useRef<number | null>(null);
   const [alertConfig, setAlertConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -428,27 +429,31 @@ const App: React.FC = () => {
         let timeLeft = 10;
         setBanCountdown(timeLeft);
         
-        const timer = setInterval(() => {
+        banTimerRef.current = window.setInterval(() => {
           timeLeft -= 1;
           setBanCountdown(timeLeft);
           
           if (timeLeft <= 0) {
-            clearInterval(timer);
+            if (banTimerRef.current) clearInterval(banTimerRef.current);
             setBanMessage(t.accountDeletedDesc.replace('{time}', '0'));
             handleLogout();
             setShowAccountDeletedModal(false);
             isBanProcessStartedRef.current = false;
             
-            // Clear ban message after 10 seconds on login screen
+            // Clear ban message after 13 seconds on login screen
             setTimeout(() => {
               setBanMessage(null);
-            }, 10000);
+            }, 13000);
           }
         }, 1000);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (banTimerRef.current) clearInterval(banTimerRef.current);
+      isBanProcessStartedRef.current = false;
+    };
   }, [user, db, t]);
 
   useEffect(() => {
