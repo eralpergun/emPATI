@@ -4,6 +4,7 @@ import { Map, Clock, Heart, Navigation, User, ChevronRight, Info, Trash2, Trophy
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS, it, fr, de, es, pt, ru, ja, arSA } from 'date-fns/locale';
 import { LanguageCode, FoodMarker } from '../types';
+import Logo from './Logo';
 import { translations } from '../constants/translations';
 
 interface MenuProps {
@@ -185,7 +186,8 @@ const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, 
         </div>
       )}
 
-      <div className="bg-slate-900/[0.03] p-6 rounded-[2rem] border border-dashed border-slate-200">
+      <div className="bg-slate-900/[0.03] p-6 rounded-[2rem] border border-dashed border-slate-200 flex flex-col items-center gap-4">
+        <Logo size={32} color="#cbd5e1" />
         <p className="text-xs text-slate-500 leading-relaxed text-center font-medium">
           {t.doubleClickTip}
         </p>

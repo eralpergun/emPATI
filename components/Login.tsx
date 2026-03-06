@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, LanguageCode } from '../types';
-import { Cat, ArrowRight, UserCircle, Lock, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
+import Logo from './Logo';
+import { ArrowRight, UserCircle, Lock, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
 import { translations } from '../constants/translations';
 import { db, ref, get, set, remove, push } from '../lib/firebase';
 
@@ -156,8 +157,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
     <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center p-4 py-8 overflow-y-auto">
       <div className="max-w-md w-full my-auto py-4">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 bg-orange-500 rounded-[2rem] sm:rounded-[2.5rem] text-white mb-4 sm:mb-6 shadow-2xl shadow-orange-100 animate-bounce-slow">
-            <Cat className="w-10 h-10 sm:w-12 sm:h-12" strokeWidth={2.5} />
+          <div className="inline-flex items-center justify-center w-28 h-28 sm:w-32 sm:h-32 bg-white rounded-[2rem] sm:rounded-[2.5rem] mb-4 sm:mb-6 shadow-2xl shadow-orange-100 animate-bounce-slow overflow-hidden p-4">
+            <Logo size="100%" />
           </div>
           <h1 className="text-4xl sm:text-5xl font-black text-slate-900 mb-1 tracking-tighter">emPATİ</h1>
           <p className="text-orange-600 font-black text-[10px] sm:text-sm uppercase tracking-[0.2em] mb-2 sm:mb-4">İyiliği Haritaya İşle!</p>

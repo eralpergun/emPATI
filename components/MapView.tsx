@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, CircleMarker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { FoodMarker, LanguageCode } from '../types';
+import Logo from './Logo';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS, it, fr, de, es, pt, ru, ja, arSA } from 'date-fns/locale';
 import { User, Clock, Navigation2, MapPin, AlertCircle, ArrowRight, Trash2 } from 'lucide-react';
@@ -193,8 +194,8 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   if (!userLocation && !initialCenterDone && !forceOpen) {
     return (
       <div className="w-full h-[100dvh] flex flex-col items-center justify-center bg-slate-50 gap-6 p-6">
-        <div className="w-20 h-20 bg-orange-500 rounded-3xl flex items-center justify-center text-white shadow-2xl animate-pulse">
-          <MapPin size={40} />
+        <div className="w-32 h-32 bg-white rounded-3xl flex items-center justify-center shadow-2xl animate-pulse p-4">
+          <Logo size="100%" />
         </div>
         <div className="text-center space-y-2">
           <p className="font-black text-slate-800 tracking-tight text-lg">{t.locSearching}</p>

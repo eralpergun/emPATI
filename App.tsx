@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Logo from './components/Logo';
 import Login from './components/Login';
 import MapView from './components/MapView';
 import Menu from './components/Menu';
@@ -468,9 +469,7 @@ const App: React.FC = () => {
     <div className="h-screen w-full flex flex-col relative overflow-hidden bg-slate-50">
       <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 py-4 px-6 flex justify-between items-center z-[3000] shadow-sm">
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setView('menu')}>
-          <div className="bg-orange-500 p-2 rounded-xl text-white shadow-lg shadow-orange-500/20">
-            <Cat size={20} strokeWidth={2.5} />
-          </div>
+          <Logo size={48} />
           <h1 className="text-xl font-black text-slate-900 tracking-tight">emPATİ</h1>
         </div>
         <div className="flex items-center gap-4">

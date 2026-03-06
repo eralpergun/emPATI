@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Language, LanguageCode, NotificationSetting } from '../types';
+import Logo from './Logo';
 import { Globe, Check, Trash2, Bell, Users, Search, Eye, EyeOff, ShieldAlert, UserCircle } from 'lucide-react';
 import { translations } from '../constants/translations';
 import { db, ref, get, remove, update, push, set } from '../lib/firebase';
@@ -245,7 +246,8 @@ const Settings: React.FC<SettingsProps> = ({
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-8 h-full overflow-y-auto pb-32">
-      <div className="pt-4">
+      <div className="pt-4 flex items-center gap-3">
+        <Logo size={48} />
         <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t.settings}</h2>
       </div>
 
