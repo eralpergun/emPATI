@@ -20,7 +20,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onViewChange, curren
   ] as const;
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[4000] w-[calc(100%-2rem)] max-w-md">
+    <div className="fixed bottom-10 pb-[env(safe-area-inset-bottom)] left-1/2 -translate-x-1/2 z-[4000] w-[calc(100%-2rem)] max-w-md">
       <div className="bg-white/90 backdrop-blur-xl border border-white/50 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[2rem] p-2 flex items-center justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;

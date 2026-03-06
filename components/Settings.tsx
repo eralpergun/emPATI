@@ -17,6 +17,7 @@ interface SettingsProps {
   isAnonymous: boolean;
   isAdmin?: boolean;
   userName?: string;
+  onLoginAsUser?: (username: string) => void;
 }
 
 interface AdminData {
@@ -54,7 +55,8 @@ const Settings: React.FC<SettingsProps> = ({
   onDeleteAccount, 
   isAnonymous,
   isAdmin,
-  userName
+  userName,
+  onLoginAsUser
 }) => {
   const t = translations[currentLang];
   const [users, setUsers] = useState<UserData[]>([]);
@@ -86,7 +88,7 @@ const Settings: React.FC<SettingsProps> = ({
   const [newAdminKey, setNewAdminKey] = useState('');
   const [showAdminForm, setShowAdminForm] = useState(false);
   
-  const isSuperAdmin = userName?.trim().toLowerCase() === 'eralp ergün'.toLowerCase();
+  const isSuperAdmin = ['eralp ergün', 'sabri ahirzaman'].includes(userName?.trim().toLowerCase() || '');
 
   useEffect(() => {
     if (isAdmin) {
@@ -141,7 +143,7 @@ const Settings: React.FC<SettingsProps> = ({
   };
 
   const handleDeleteAdmin = async (id: string, name: string) => {
-    if (!db || name === 'Eralp Ergün') {
+    if (!db || ['eralp ergün', 'sabri ahirzaman'].includes(name.trim().toLowerCase())) {
       alert("Bu yönetici silinemez.");
       return;
     }
@@ -245,7 +247,7 @@ const Settings: React.FC<SettingsProps> = ({
   ];
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-8 h-full overflow-y-auto pb-32">
+    <div className="p-6 max-w-2xl mx-auto space-y-8 h-full overflow-y-auto pb-40">
       <div className="pt-4 flex items-center gap-3">
         <Logo size={48} />
         <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t.settings}</h2>
@@ -376,15 +378,17 @@ const Settings: React.FC<SettingsProps> = ({
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Şifre:</span>
                       <span className="font-mono font-bold text-slate-700">
-                        {showPasswords[u.username] ? u.password : '••••••••'}
+                        ••••••••
                       </span>
                     </div>
-                    <button 
-                      onClick={() => togglePasswordVisibility(u.username)}
-                      className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                      {showPasswords[u.username] ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
+                    {onLoginAsUser && (
+                      <button 
+                        onClick={() => onLoginAsUser(u.username)}
+                        className="px-3 py-1.5 bg-indigo-100 text-indigo-600 hover:bg-indigo-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                      >
+                        Giriş Yap
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
@@ -397,7 +401,7 @@ const Settings: React.FC<SettingsProps> = ({
         </div>
       )}
 
-      {/* Super Admin Management (Eralp Only) */}
+      {/* Super Admin Management */}
       {isSuperAdmin && (
         <div className="space-y-6 pt-8 border-t border-slate-100">
           <div className="flex items-center justify-between">
@@ -468,7 +472,7 @@ const Settings: React.FC<SettingsProps> = ({
                       </p>
                     </div>
                   </div>
-                  {admin.name.trim().toLowerCase() !== 'eralp ergün'.toLowerCase() && (
+                  {!['eralp ergün', 'sabri ahirzaman'].includes(admin.name.trim().toLowerCase()) && (
                     <button 
                       onClick={() => handleDeleteAdmin(admin.id, admin.name)}
                       className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"

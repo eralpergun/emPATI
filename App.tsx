@@ -430,6 +430,11 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLoginAsUser = (username: string) => {
+    setUser({ name: username, isAdmin: false });
+    setView('menu');
+  };
+
   const handleDeleteAccount = async () => {
     if (!user || !db) return;
     
@@ -506,6 +511,7 @@ const App: React.FC = () => {
             isAnonymous={user.name === '@@ANONYMOUS@@'}
             isAdmin={!!user.isAdmin}
             userName={user.name}
+            onLoginAsUser={handleLoginAsUser}
           />
         </div>
         <div className={`absolute inset-0 z-10 transition-opacity duration-300 ${view === 'map' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
@@ -553,7 +559,7 @@ const App: React.FC = () => {
 
       {/* Language Suggestion Modal */}
       {showLanguagePrompt && suggestedLang && (
-        <div className="fixed inset-0 z-[5000] flex items-end sm:items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[5000] flex items-end sm:items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-black/20 backdrop-blur-sm">
           <div className="bg-white w-full max-w-sm p-6 rounded-[2rem] shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300">
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">

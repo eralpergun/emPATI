@@ -292,7 +292,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         }
       `}</style>
 
-      <div className="absolute bottom-28 left-0 right-0 z-[1000] px-6 flex items-center justify-center gap-4 pointer-events-none">
+      <div className="absolute bottom-36 pb-[env(safe-area-inset-bottom)] left-0 right-0 z-[1000] px-6 flex items-center justify-center gap-4 pointer-events-none">
          <button 
            onClick={() => setActiveType('cat')} 
            className={`pointer-events-auto flex-1 p-4 rounded-3xl shadow-xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 border-b-4 ${activeType === 'cat' ? 'bg-orange-600 border-orange-800 text-white scale-105 shadow-orange-500/50' : 'bg-white border-slate-200 text-slate-400 opacity-90 hover:opacity-100 hover:bg-slate-50'}`}

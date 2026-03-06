@@ -47,7 +47,7 @@ const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, 
   }, [markers, t]);
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6 h-full overflow-y-auto pb-32">
+    <div className="p-6 max-w-2xl mx-auto space-y-6 h-full overflow-y-auto pb-40">
       <div className="flex justify-between items-start mt-4">
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">{t.welcome}, {userName}! 👋</h2>
