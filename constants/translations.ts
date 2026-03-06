@@ -53,8 +53,8 @@ export const translations: Record<LanguageCode, any> = {
     notifNone: "Bildirimleri Kapat",
     enableLocation: "Konumu Etkinleştir",
     retryLocation: "Konumu Yenile",
-    accountDeleted: "Hesabınız Silindi",
-    accountDeletedDesc: "Hesabınız bir yönetici tarafından silinmiştir. Daha fazla bilgi için destek ile iletişime geçebilirsiniz."
+    accountDeleted: "Hesabınız Banlandı",
+    accountDeletedDesc: "Hesabınız bir yönetici tarafından banlanmıştır. {time} saniye içinde giriş ekranına yönlendirileceksiniz."
   },
   en: {
     welcome: "Hello",
@@ -107,8 +107,8 @@ export const translations: Record<LanguageCode, any> = {
     notifNone: "Turn Off Notifications",
     enableLocation: "Enable Location",
     retryLocation: "Retry Location",
-    accountDeleted: "Account Deleted",
-    accountDeletedDesc: "Your account has been deleted by an administrator. You can contact support for more information."
+    accountDeleted: "Account Banned",
+    accountDeletedDesc: "Your account has been banned by an administrator. You will be redirected to the login screen in {time} seconds."
   },
   it: {
     welcome: "Ciao",

@@ -36,6 +36,9 @@ const App: React.FC = () => {
   const [suggestedLang, setSuggestedLang] = useState<LanguageCode | null>(null);
   const languageCheckDoneRef = useRef(false);
   const [showAccountDeletedModal, setShowAccountDeletedModal] = useState(false);
+  const [banCountdown, setBanCountdown] = useState(10);
+  const [banMessage, setBanMessage] = useState<string | null>(null);
+  const isBanProcessStartedRef = useRef(false);
   const [alertConfig, setAlertConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -383,6 +386,7 @@ const App: React.FC = () => {
   }, [markers, userLocation, language, locationStatus]);
 
   const handleLogin = (newUser: User) => {
+    setBanMessage(null);
     setUser(newUser);
     localStorage.setItem('empati_user', JSON.stringify(newUser));
     setView('menu');
@@ -402,11 +406,30 @@ const App: React.FC = () => {
     const userRef = ref(db, `users/${safeUsername}`);
 
     const checkAccount = async () => {
+      if (isBanProcessStartedRef.current) return;
+      
       try {
         const snapshot = await get(userRef);
         if (!snapshot.exists()) {
-          handleLogout();
+          isBanProcessStartedRef.current = true;
           setShowAccountDeletedModal(true);
+          
+          // Start countdown
+          let timeLeft = 10;
+          setBanCountdown(timeLeft);
+          
+          const timer = setInterval(() => {
+            timeLeft -= 1;
+            setBanCountdown(timeLeft);
+            
+            if (timeLeft <= 0) {
+              clearInterval(timer);
+              setBanMessage(t.accountDeletedDesc.replace('{time}', '0'));
+              handleLogout();
+              setShowAccountDeletedModal(false);
+              isBanProcessStartedRef.current = false;
+            }
+          }, 1000);
         }
       } catch (error) {
         console.error("Account check error:", error);
@@ -582,7 +605,7 @@ const App: React.FC = () => {
         <Login 
           onLogin={handleLogin} 
           currentLang={language} 
-          message={showAccountDeletedModal ? t.accountDeletedDesc : undefined}
+          message={banMessage || undefined}
         />
       ) : (
         <>
@@ -729,9 +752,14 @@ const App: React.FC = () => {
       <ConfirmModal 
         isOpen={showAccountDeletedModal}
         title={t.accountDeleted}
-        message={t.accountDeletedDesc}
+        message={t.accountDeletedDesc.replace('{time}', banCountdown.toString())}
         confirmText={t.loginBtn}
-        onConfirm={() => setShowAccountDeletedModal(false)}
+        onConfirm={() => {
+          setBanMessage(t.accountDeletedDesc.replace('{time}', '0'));
+          handleLogout();
+          setShowAccountDeletedModal(false);
+          isBanProcessStartedRef.current = false;
+        }}
         type="danger"
       />
     </div>
