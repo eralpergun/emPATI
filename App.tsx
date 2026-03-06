@@ -37,11 +37,6 @@ const App: React.FC = () => {
   const [showLanguagePrompt, setShowLanguagePrompt] = useState(false);
   const [suggestedLang, setSuggestedLang] = useState<LanguageCode | null>(null);
   const languageCheckDoneRef = useRef(false);
-  const [showAccountDeletedModal, setShowAccountDeletedModal] = useState(false);
-  const [banCountdown, setBanCountdown] = useState(10);
-  const [banMessage, setBanMessage] = useState<string | null>(null);
-  const isBanProcessStartedRef = useRef(false);
-  const banTimerRef = useRef<number | null>(null);
   const [alertConfig, setAlertConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -397,7 +392,6 @@ const App: React.FC = () => {
   }, [markers, userLocation, language, locationStatus]);
 
   const handleLogin = (newUser: User) => {
-    setBanMessage(null);
     setUser(newUser);
     localStorage.setItem('empati_user', JSON.stringify(newUser));
     setView('menu');
@@ -411,51 +405,6 @@ const App: React.FC = () => {
   };
 
   // Check for account deletion in real-time
-  useEffect(() => {
-    if (!user || user.name === '@@ANONYMOUS@@' || !db) return;
-
-    const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
-    const userPath = user.isAdmin ? `admins/${user.adminKey}` : `users/${safeUsername}`;
-    const userRef = ref(db, userPath);
-
-    const unsubscribe = onValue(userRef, (snapshot) => {
-      if (isBanProcessStartedRef.current) return;
-      
-      if (!snapshot.exists()) {
-        isBanProcessStartedRef.current = true;
-        setShowAccountDeletedModal(true);
-        
-        // Start countdown
-        let timeLeft = 10;
-        setBanCountdown(timeLeft);
-        
-        banTimerRef.current = window.setInterval(() => {
-          timeLeft -= 1;
-          setBanCountdown(timeLeft);
-          
-          if (timeLeft <= 0) {
-            if (banTimerRef.current) clearInterval(banTimerRef.current);
-            setBanMessage(t.accountDeletedDesc.replace('{time}', '0'));
-            handleLogout();
-            setShowAccountDeletedModal(false);
-            isBanProcessStartedRef.current = false;
-            
-            // Clear ban message after 13 seconds on login screen
-            setTimeout(() => {
-              setBanMessage(null);
-            }, 13000);
-          }
-        }, 1000);
-      }
-    });
-
-    return () => {
-      unsubscribe();
-      if (banTimerRef.current) clearInterval(banTimerRef.current);
-      isBanProcessStartedRef.current = false;
-    };
-  }, [user, db, t]);
-
   useEffect(() => {
     if (!isConfigured || !db) return;
 
@@ -605,46 +554,12 @@ const App: React.FC = () => {
     setView('menu');
   };
 
-  const handleDeleteAccount = async () => {
-    if (!user || !db) return;
-    
-    try {
-      const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
-      
-      // Fetch all markers to anonymize (not just the last 100 in state)
-      const markersRef = ref(db, 'markers');
-      const snapshot = await get(markersRef);
-      const updates: Record<string, any> = {};
-      
-      if (snapshot.exists()) {
-        snapshot.forEach((child) => {
-          const markerData = child.val();
-          if (markerData.addedBy === user.name) {
-            updates[`markers/${child.key}/addedBy`] = '@@ANONYMOUS@@';
-          }
-        });
-      }
-
-      if (Object.keys(updates).length > 0) {
-        await update(ref(db), updates);
-      }
-
-      await remove(ref(db, `users/${safeUsername}`));
-      handleLogout();
-      showAlert("Başarılı", "Hesabınız başarıyla silindi. Eklediğiniz mamalar anonim olarak korunacaktır.", 'success');
-    } catch (error) {
-      console.error("Account deletion error:", error);
-      showAlert("Hata", "Hesap silinirken bir hata oluştu.", 'danger');
-    }
-  };
-
   return (
     <div className="h-screen w-full flex flex-col relative overflow-hidden bg-slate-50">
       {(!user || view === 'login') ? (
         <Login 
           onLogin={handleLogin} 
           currentLang={language} 
-          message={banMessage || undefined}
           registrationEnabled={registrationEnabled}
         />
       ) : (
@@ -687,7 +602,6 @@ const App: React.FC = () => {
                 notificationSetting={notificationSetting}
                 onNotificationSettingChange={handleNotificationSettingChange}
                 onBack={() => setView('menu')} 
-                onDeleteAccount={handleDeleteAccount}
                 isAnonymous={user?.name === '@@ANONYMOUS@@'}
                 isAdmin={!!user?.isAdmin}
                 userName={user?.name || ''}
@@ -792,19 +706,7 @@ const App: React.FC = () => {
       />
 
       {/* Account Deleted Modal */}
-      <ConfirmModal 
-        isOpen={showAccountDeletedModal}
-        title={t.accountDeleted}
-        message={t.accountDeletedDesc.replace('{time}', banCountdown.toString())}
-        confirmText={t.loginBtn}
-        onConfirm={() => {
-          setBanMessage(t.accountDeletedDesc.replace('{time}', '0'));
-          handleLogout();
-          setShowAccountDeletedModal(false);
-          isBanProcessStartedRef.current = false;
-        }}
-        type="danger"
-      />
+      {/* Removed */}
     </div>
   );
 };

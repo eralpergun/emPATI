@@ -13,7 +13,6 @@ interface SettingsProps {
   notificationSetting: NotificationSetting;
   onNotificationSettingChange: (setting: NotificationSetting) => void;
   onBack: () => void;
-  onDeleteAccount: () => void;
   isAnonymous: boolean;
   isAdmin: boolean;
   userName: string;
@@ -58,7 +57,6 @@ const Settings: React.FC<SettingsProps> = ({
   notificationSetting,
   onNotificationSettingChange,
   onBack, 
-  onDeleteAccount, 
   isAnonymous,
   isAdmin,
   userName,
@@ -562,34 +560,7 @@ const Settings: React.FC<SettingsProps> = ({
         </div>
       )}
 
-      {!isAnonymous && !isAdmin && (
-        <div className="space-y-4 pt-8 border-t border-slate-100">
-           <div className="flex items-center gap-2 mb-2 ml-1">
-            <Trash2 size={18} className="text-red-500" />
-            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Hesap İşlemleri</h3>
-          </div>
-          
-          <button
-            onClick={() => {
-              setModalConfig({
-                isOpen: true,
-                title: 'Hesabımı Sil',
-                message: 'Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
-                confirmText: 'Evet, Sil',
-                type: 'danger',
-                onConfirm: () => {
-                  onDeleteAccount();
-                  setModalConfig(prev => ({ ...prev, isOpen: false }));
-                }
-              });
-            }}
-            className="w-full flex items-center justify-between p-5 rounded-3xl border-2 border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-200 transition-all font-bold"
-          >
-            <span>Hesabımı Sil</span>
-            <Trash2 size={20} />
-          </button>
-        </div>
-      )}
+      {/* Account Deletion Removed */}
 
       <ConfirmModal 
         isOpen={modalConfig.isOpen}
