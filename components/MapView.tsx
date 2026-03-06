@@ -6,7 +6,7 @@ import { FoodMarker, LanguageCode } from '../types';
 import Logo from './Logo';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS, it, fr, de, es, pt, ru, ja, arSA } from 'date-fns/locale';
-import { User, Clock, Navigation2, MapPin, AlertCircle, ArrowRight, Trash2, Search, X, Loader2 } from 'lucide-react';
+import { User, Clock, Navigation2, AlertCircle, ArrowRight, Trash2 } from 'lucide-react';
 import { translations } from '../constants/translations';
 import ConfirmModal from './ConfirmModal';
 
@@ -45,14 +45,6 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const [initialCenterDone, setInitialCenterDone] = useState(false);
   const [activeType, setActiveType] = useState<'cat' | 'dog'>('cat');
   
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [searchMarker, setSearchMarker] = useState<[number, number] | null>(null);
-  const searchTimeoutRef = useRef<any>(null);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
-
   const [forceOpen, setForceOpen] = useState(false);
   const [showSkipButton, setShowSkipButton] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
@@ -197,69 +189,6 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
       });
     }
   }, [userLocation]);
-
-  const performSearch = async (query: string) => {
-    if (!query || query.length < 3) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`);
-      const data = await response.json();
-      setSearchResults(data);
-      setShowResults(true);
-    } catch (error) {
-      console.error("Search error:", error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    
-    if (value.length >= 3) {
-      searchTimeoutRef.current = setTimeout(() => {
-        performSearch(value);
-      }, 500);
-    } else {
-      setSearchResults([]);
-      setShowResults(false);
-    }
-  };
-
-  const selectLocation = (result: any) => {
-    const lat = parseFloat(result.lat);
-    const lon = parseFloat(result.lon);
-    
-    if (mapRef.current) {
-      setIsFollowing(false);
-      mapRef.current.flyTo([lat, lon], 17, {
-        animate: true,
-        duration: 1.5
-      });
-    }
-    
-    setSearchMarker([lat, lon]);
-    setSearchQuery(result.display_name);
-    setShowResults(false);
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
-        setShowResults(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   useEffect(() => {
     if (userLocation && mapRef.current) {
@@ -443,70 +372,6 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         )}
       </div>
 
-      {/* Search Bar */}
-      <div className="absolute top-6 left-6 right-6 z-[3000]" ref={searchContainerRef}>
-        <div className="relative group">
-          <div className="absolute inset-0 bg-white/40 backdrop-blur-xl rounded-[2rem] -m-1 opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-          <div className="relative bg-white/95 backdrop-blur-md border border-slate-200 rounded-[2rem] shadow-2xl flex items-center px-6 py-4 gap-4 transition-all duration-300 group-focus-within:ring-4 group-focus-within:ring-blue-500/10">
-            <div className="text-slate-400">
-              {isSearching ? <Loader2 size={24} className="animate-spin text-blue-500" /> : <Search size={24} />}
-            </div>
-            <input 
-              type="text" 
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onFocus={() => searchQuery.length >= 3 && setShowResults(true)}
-              placeholder={t.searchPlaceholder || "Konum Ara..."}
-              className="flex-1 bg-transparent border-none outline-none text-slate-800 font-bold placeholder:text-slate-400 text-lg"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => {
-                  setSearchQuery('');
-                  setSearchResults([]);
-                  setShowResults(false);
-                  setSearchMarker(null);
-                }}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X size={20} />
-              </button>
-            )}
-          </div>
-
-          {/* Search Results */}
-          {showResults && searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-top-4 duration-300 max-h-[60vh] overflow-y-auto">
-              {searchResults.map((result, idx) => (
-                <button 
-                  key={idx}
-                  onClick={() => selectLocation(result)}
-                  className="w-full flex items-start gap-4 p-5 hover:bg-slate-50 transition-colors text-left border-b border-slate-100 last:border-none"
-                >
-                  <div className="mt-1 p-2 bg-blue-50 text-blue-600 rounded-xl">
-                    <MapPin size={20} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-black text-slate-800 text-sm truncate">{result.display_name.split(',')[0]}</p>
-                    <p className="text-xs text-slate-500 font-medium line-clamp-2 mt-0.5">{result.display_name}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-          
-          {showResults && searchQuery.length >= 3 && !isSearching && searchResults.length === 0 && (
-            <div className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-[2.5rem] shadow-2xl p-8 text-center animate-in slide-in-from-top-4 duration-300">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-                <Search size={32} />
-              </div>
-              <p className="font-black text-slate-800">{t.noResults || "Sonuç bulunamadı"}</p>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Tekrar deneyin</p>
-            </div>
-          )}
-        </div>
-      </div>
-
       <MapContainer 
         center={userLocation || defaultPosition} 
         zoom={17} 
@@ -560,37 +425,6 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
               <Popup className="font-bold text-blue-600">{t.youAreHere}</Popup>
             </CircleMarker>
           </>
-        )}
-
-        {searchMarker && (
-          <Marker 
-            position={searchMarker} 
-            icon={L.divIcon({
-              html: `
-                <div class="relative flex items-center justify-center">
-                  <div class="absolute w-12 h-12 bg-red-500/20 rounded-full animate-ping"></div>
-                  <div class="relative bg-red-600 text-white p-2 rounded-full shadow-2xl border-2 border-white">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                  </div>
-                </div>
-              `,
-              className: '',
-              iconSize: [48, 48],
-              iconAnchor: [24, 24]
-            })}
-          >
-            <Popup>
-              <div className="p-2 text-center">
-                <p className="font-black text-slate-800 text-sm mb-2">{searchQuery.split(',')[0]}</p>
-                <button 
-                  onClick={() => setSearchMarker(null)}
-                  className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-slate-200 transition-colors"
-                >
-                  Kapat
-                </button>
-              </div>
-            </Popup>
-          </Marker>
         )}
 
         {currentZoom < MIN_ZOOM_LEVEL && !isAdmin ? (

@@ -405,6 +405,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setUser(null);
     setView('login');
+    setNotifications([]);
     localStorage.removeItem('empati_user');
   };
 
@@ -437,6 +438,11 @@ const App: React.FC = () => {
             handleLogout();
             setShowAccountDeletedModal(false);
             isBanProcessStartedRef.current = false;
+            
+            // Clear ban message after 10 seconds on login screen
+            setTimeout(() => {
+              setBanMessage(null);
+            }, 10000);
           }
         }, 1000);
       }

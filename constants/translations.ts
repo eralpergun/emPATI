@@ -54,10 +54,7 @@ export const translations: Record<LanguageCode, any> = {
     enableLocation: "Konumu Etkinleştir",
     retryLocation: "Konumu Yenile",
     accountDeleted: "Hesabınız Banlandı",
-    accountDeletedDesc: "Hesabınız bir yönetici tarafından banlanmıştır. {time} saniye içinde giriş ekranına yönlendirileceksiniz.",
-    searchPlaceholder: "Konum Ara...",
-    searching: "Aranıyor...",
-    noResults: "Sonuç bulunamadı"
+    accountDeletedDesc: "Hesabınız bir yönetici tarafından banlanmıştır. {time} saniye içinde giriş ekranına yönlendirileceksiniz."
   },
   en: {
     welcome: "Hello",
@@ -111,10 +108,7 @@ export const translations: Record<LanguageCode, any> = {
     enableLocation: "Enable Location",
     retryLocation: "Retry Location",
     accountDeleted: "Account Banned",
-    accountDeletedDesc: "Your account has been banned by an administrator. You will be redirected to the login screen in {time} seconds.",
-    searchPlaceholder: "Search Location...",
-    searching: "Searching...",
-    noResults: "No results found"
+    accountDeletedDesc: "Your account has been banned by an administrator. You will be redirected to the login screen in {time} seconds."
   },
   it: {
     welcome: "Ciao",
