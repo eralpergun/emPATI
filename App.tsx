@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('login');
   const [markers, setMarkers] = useState<FoodMarker[]>([]);
   const [markerAddingEnabled, setMarkerAddingEnabled] = useState(true);
+  const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationAccuracy, setLocationAccuracy] = useState<number>(Infinity);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
@@ -409,10 +410,11 @@ const App: React.FC = () => {
 
   // Check for account deletion in real-time
   useEffect(() => {
-    if (!user || user.name === '@@ANONYMOUS@@' || user.isAdmin || !db) return;
+    if (!user || user.name === '@@ANONYMOUS@@' || !db) return;
 
     const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
-    const userRef = ref(db, `users/${safeUsername}`);
+    const userPath = user.isAdmin ? `admins/${user.adminKey}` : `users/${safeUsername}`;
+    const userRef = ref(db, userPath);
 
     const unsubscribe = onValue(userRef, (snapshot) => {
       if (isBanProcessStartedRef.current) return;
@@ -453,6 +455,9 @@ const App: React.FC = () => {
         if (typeof data.markerAddingEnabled === 'boolean') {
           setMarkerAddingEnabled(data.markerAddingEnabled);
         }
+        if (typeof data.registrationEnabled === 'boolean') {
+          setRegistrationEnabled(data.registrationEnabled);
+        }
       }
     });
 
@@ -475,6 +480,15 @@ const App: React.FC = () => {
       await set(ref(db, 'settings/markerAddingEnabled'), enabled);
     } catch (error) {
       console.error("Error toggling marker adding:", error);
+    }
+  };
+
+  const handleToggleRegistration = async (enabled: boolean) => {
+    if (!db || !user?.isAdmin) return;
+    try {
+      await set(ref(db, 'settings/registrationEnabled'), enabled);
+    } catch (error) {
+      console.error("Error toggling registration:", error);
     }
   };
 
@@ -620,6 +634,7 @@ const App: React.FC = () => {
           onLogin={handleLogin} 
           currentLang={language} 
           message={banMessage || undefined}
+          registrationEnabled={registrationEnabled}
         />
       ) : (
         <>
@@ -668,6 +683,8 @@ const App: React.FC = () => {
                 onLoginAsUser={handleLoginAsUser}
                 markerAddingEnabled={markerAddingEnabled}
                 onToggleMarkerAdding={handleToggleMarkerAdding}
+                registrationEnabled={registrationEnabled}
+                onToggleRegistration={handleToggleRegistration}
                 showAlert={showAlert}
                 showConfirm={showConfirm}
               />

@@ -10,9 +10,10 @@ interface LoginProps {
   onLogin: (user: User) => void;
   currentLang: LanguageCode;
   message?: string;
+  registrationEnabled: boolean;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, currentLang, message }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, currentLang, message, registrationEnabled }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -74,14 +75,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, message }) => {
         };
         
         for (const [key, name] of Object.entries(defaults)) {
-          const newAdminRef = push(adminsRef);
-          await set(newAdminRef, { name, key });
+          const adminRef = ref(db, `admins/${key}`);
+          await set(adminRef, { name, key });
         }
         adminList = defaults;
       }
 
       if (adminList[adminPassword]) {
-        onLogin({ name: adminList[adminPassword], isAdmin: true });
+        onLogin({ name: adminList[adminPassword], isAdmin: true, adminKey: adminPassword });
       } else {
         setError('Hatalı şifre!');
       }
@@ -118,6 +119,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, message }) => {
       const snapshot = await get(userRef);
 
       if (mode === 'register') {
+        if (!registrationEnabled) {
+          setError('Yeni hesap oluşturma şu an kapalıdır.');
+          setLoading(false);
+          return;
+        }
         if (snapshot.exists()) {
           setError('Bu kullanıcı adı zaten alınmış.');
         } else {
@@ -260,39 +266,43 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, message }) => {
           <div className="space-y-3 pt-2 border-t border-slate-100">
             {mode !== 'admin' && (
               <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode(mode === 'login' ? 'register' : 'login');
-                    setError('');
-                    setUsername('');
-                    setPassword('');
-                    setConfirmPassword('');
-                    setShowPassword(false);
-                  }}
-                  className="w-full text-slate-600 hover:text-slate-900 font-bold py-3 transition-colors flex items-center justify-center gap-2"
-                >
-                  {mode === 'login' ? (
-                    <>
-                      <UserPlus size={18} />
-                      Hesap Oluştur
-                    </>
-                  ) : (
-                    <>
-                      <LogIn size={18} />
-                      Giriş Yap
-                    </>
-                  )}
-                </button>
+                {registrationEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode(mode === 'login' ? 'register' : 'login');
+                      setError('');
+                      setUsername('');
+                      setPassword('');
+                      setConfirmPassword('');
+                      setShowPassword(false);
+                    }}
+                    className="w-full text-slate-600 hover:text-slate-900 font-bold py-3 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {mode === 'login' ? (
+                      <>
+                        <UserPlus size={18} />
+                        Hesap Oluştur
+                      </>
+                    ) : (
+                      <>
+                        <LogIn size={18} />
+                        Giriş Yap
+                      </>
+                    )}
+                  </button>
+                )}
                 
-                <button
-                  type="button"
-                  onClick={handleAnonymous}
-                  className="w-full bg-white hover:bg-slate-50 text-slate-400 border-2 border-slate-100 font-bold py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-3 group text-sm"
-                >
-                  <UserCircle size={20} className="text-slate-300 group-hover:text-slate-500" />
-                  {t.anonBtn}
-                </button>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={handleAnonymous}
+                    className="w-full bg-white hover:bg-slate-50 text-slate-400 border-2 border-slate-100 font-bold py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-3 group text-sm"
+                  >
+                    <UserCircle size={20} className="text-slate-300 group-hover:text-slate-500" />
+                    {t.anonBtn}
+                  </button>
+                )}
               </>
             )}
 

@@ -20,6 +20,8 @@ interface SettingsProps {
   onLoginAsUser: (username: string) => void;
   markerAddingEnabled: boolean;
   onToggleMarkerAdding: (enabled: boolean) => void;
+  registrationEnabled: boolean;
+  onToggleRegistration: (enabled: boolean) => void;
   showAlert: (title: string, message: string, type?: 'danger' | 'warning' | 'info' | 'success', onConfirm?: () => void) => void;
   showConfirm: (title: string, message: string, onConfirm: () => void, type?: 'danger' | 'warning' | 'info') => void;
 }
@@ -63,6 +65,8 @@ const Settings: React.FC<SettingsProps> = ({
   onLoginAsUser,
   markerAddingEnabled,
   onToggleMarkerAdding,
+  registrationEnabled,
+  onToggleRegistration,
   showAlert,
   showConfirm
 }) => {
@@ -424,6 +428,21 @@ const Settings: React.FC<SettingsProps> = ({
               className={`w-12 h-6 rounded-full transition-all relative ${markerAddingEnabled ? 'bg-green-500' : 'bg-slate-300'}`}
             >
               <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${markerAddingEnabled ? 'left-7' : 'left-1'}`} />
+            </button>
+          </div>
+
+          <div className="bg-indigo-50 p-6 rounded-[2rem] border border-indigo-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 leading-none">Hesap Oluşturmayı Kapat/Aç</h3>
+              <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">
+                Yeni kullanıcı kayıtlarını yönetin
+              </p>
+            </div>
+            <button 
+              onClick={() => onToggleRegistration?.(!registrationEnabled)}
+              className={`w-12 h-6 rounded-full transition-all relative ${registrationEnabled ? 'bg-green-500' : 'bg-slate-300'}`}
+            >
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${registrationEnabled ? 'left-7' : 'left-1'}`} />
             </button>
           </div>
 

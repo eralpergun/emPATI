@@ -2,6 +2,7 @@
 export interface User {
   name: string;
   isAdmin?: boolean;
+  adminKey?: string;
 }
 
 export interface FoodMarker {
