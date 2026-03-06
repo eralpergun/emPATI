@@ -50,7 +50,9 @@ export const translations: Record<LanguageCode, any> = {
     notif5km: "5km Yakındaki Eski Mamalar",
     notif1km: "1km Yakındaki Eski Mamalar",
     notifMine: "Sadece Benim Mamalarım",
-    notifNone: "Bildirimleri Kapat"
+    notifNone: "Bildirimleri Kapat",
+    enableLocation: "Konumu Etkinleştir",
+    retryLocation: "Konumu Yenile"
   },
   en: {
     welcome: "Hello",
@@ -100,7 +102,9 @@ export const translations: Record<LanguageCode, any> = {
     notif5km: "Expired Food within 5km",
     notif1km: "Expired Food within 1km",
     notifMine: "Only My Food",
-    notifNone: "Turn Off Notifications"
+    notifNone: "Turn Off Notifications",
+    enableLocation: "Enable Location",
+    retryLocation: "Retry Location"
   },
   it: {
     welcome: "Ciao",
@@ -140,7 +144,9 @@ export const translations: Record<LanguageCode, any> = {
     noData: "Nessun dato",
     navMenu: "HOME",
     navMap: "MAPPA",
-    navSettings: "OPZIONI"
+    navSettings: "OPZIONI",
+    enableLocation: "Abilita Posizione",
+    retryLocation: "Riprova Posizione"
   },
   fr: {
     welcome: "Bonjour",
@@ -180,7 +186,9 @@ export const translations: Record<LanguageCode, any> = {
     noData: "Pas de données",
     navMenu: "ACCUEIL",
     navMap: "CARTE",
-    navSettings: "OPTIONS"
+    navSettings: "OPTIONS",
+    enableLocation: "Activer la Position",
+    retryLocation: "Réessayer la Position"
   },
   de: {
     welcome: "Hallo",
@@ -220,7 +228,9 @@ export const translations: Record<LanguageCode, any> = {
     noData: "Keine Daten",
     navMenu: "HOME",
     navMap: "KARTE",
-    navSettings: "OPTIONEN"
+    navSettings: "OPTIONEN",
+    enableLocation: "Standort Aktivieren",
+    retryLocation: "Standort Erneuern"
   },
   es: {
     welcome: "Hola",
@@ -260,7 +270,9 @@ export const translations: Record<LanguageCode, any> = {
     noData: "Sin datos",
     navMenu: "INICIO",
     navMap: "MAPA",
-    navSettings: "AJUSTES"
+    navSettings: "AJUSTES",
+    enableLocation: "Activar Ubicación",
+    retryLocation: "Reintentar Ubicación"
   },
   pt: {
     welcome: "Olá",
@@ -294,7 +306,9 @@ export const translations: Record<LanguageCode, any> = {
     settings: "Configurações",
     language: "IDIOMA",
     logout: "SAIR",
-    locationDisabled: "GPS Desligado"
+    locationDisabled: "GPS Desligado",
+    enableLocation: "Ativar Localização",
+    retryLocation: "Tentar Novamente"
   },
   ru: {
     welcome: "Привет",
@@ -334,7 +348,9 @@ export const translations: Record<LanguageCode, any> = {
     noData: "Нет данных",
     navMenu: "ГЛАВНАЯ",
     navMap: "КАРТА",
-    navSettings: "НАСТР."
+    navSettings: "НАСТР.",
+    enableLocation: "Включить Локацию",
+    retryLocation: "Обновить Локацию"
   },
   jp: {
     welcome: "こんにちは",
@@ -374,7 +390,9 @@ export const translations: Record<LanguageCode, any> = {
     noData: "データなし",
     navMenu: "ホーム",
     navMap: "地図",
-    navSettings: "設定"
+    navSettings: "設定",
+    enableLocation: "位置情報を有効にする",
+    retryLocation: "位置情報を再試行"
   },
   ar: {
     welcome: "مرحبا",
@@ -414,6 +432,8 @@ export const translations: Record<LanguageCode, any> = {
     noData: "لا توجد بيانات",
     navMenu: "رئيسية",
     navMap: "خريطة",
-    navSettings: "إعدادات"
+    navSettings: "إعدادات",
+    enableLocation: "تمكين الموقع",
+    retryLocation: "إعادة محاولة الموقع"
   }
 };

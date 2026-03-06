@@ -24,6 +24,7 @@ const App: React.FC = () => {
   const [locationAccuracy, setLocationAccuracy] = useState<number>(Infinity);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
   const [useHighAccuracy, setUseHighAccuracy] = useState(true);
+  const [locationErrorCount, setLocationErrorCount] = useState(0);
   const [language, setLanguage] = useState<LanguageCode>('tr');
   const [notificationSetting, setNotificationSetting] = useState<NotificationSetting>(() => {
     return (localStorage.getItem('empati_notif_setting') as NotificationSetting) || 'mine';
@@ -35,6 +36,54 @@ const App: React.FC = () => {
   const [suggestedLang, setSuggestedLang] = useState<LanguageCode | null>(null);
   const languageCheckDoneRef = useRef(false);
   const [showAccountDeletedModal, setShowAccountDeletedModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText?: string;
+    onConfirm: () => void;
+    onCancel?: () => void;
+    type?: 'danger' | 'warning' | 'info' | 'success';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Tamam',
+    onConfirm: () => {},
+  });
+
+  const showAlert = (title: string, message: string, type: 'danger' | 'warning' | 'info' | 'success' = 'info', onConfirm?: () => void) => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      confirmText: 'Tamam',
+      type,
+      onConfirm: () => {
+        setAlertConfig(prev => ({ ...prev, isOpen: false }));
+        if (onConfirm) onConfirm();
+      }
+    });
+  };
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, type: 'danger' | 'warning' | 'info' = 'warning') => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      confirmText: 'Evet',
+      cancelText: 'Hayır',
+      type,
+      onConfirm: () => {
+        setAlertConfig(prev => ({ ...prev, isOpen: false }));
+        onConfirm();
+      },
+      onCancel: () => {
+        setAlertConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
 
   const t = translations[language];
   const lastUpdateRef = useRef<number>(0);
@@ -121,6 +170,32 @@ const App: React.FC = () => {
     }
   };
 
+  const requestLocationPermission = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus('error');
+      return;
+    }
+
+    setLocationStatus('searching');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        setUserLocation([latitude, longitude]);
+        setLocationAccuracy(accuracy);
+        setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
+      },
+      (err) => {
+        console.error("Manual location request error:", err);
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationStatus('denied');
+        } else {
+          setLocationStatus('error');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371e3; // meters
     const φ1 = lat1 * Math.PI/180;
@@ -183,6 +258,8 @@ const App: React.FC = () => {
         console.warn("Geolocation error:", err.message);
       }
 
+      setLocationErrorCount(prev => prev + 1);
+
       if (err.code === err.PERMISSION_DENIED) {
         setLocationStatus('denied');
       } else if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
@@ -190,7 +267,7 @@ const App: React.FC = () => {
         if (useHighAccuracy) {
           console.log("Switching to low accuracy location mode...");
           setUseHighAccuracy(false);
-        } else {
+        } else if (locationStatus === 'searching') {
           setLocationStatus('error');
         }
       }
@@ -382,7 +459,7 @@ const App: React.FC = () => {
     if (!user) return;
 
     if (!markerAddingEnabled && !user.isAdmin) {
-      alert("Mama ekleme geçici bir süre boyunca kapalıdır.");
+      showAlert("Bilgi", "Mama ekleme geçici bir süre boyunca kapalıdır.", 'info');
       return;
     }
     
@@ -417,7 +494,7 @@ const App: React.FC = () => {
         // and we already have it locally.
       } catch (e) {
         console.error("Marker addition error: ", e);
-        alert("Mama eklenirken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.");
+        showAlert("Hata", "Mama eklenirken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.", 'danger');
         // Rollback on error if needed, but for now we keep it simple
         setMarkers(prev => prev.filter(m => m.id !== tempId));
       }
@@ -431,10 +508,10 @@ const App: React.FC = () => {
       const markersRef = ref(db, 'markers');
       await remove(markersRef);
       setMarkers([]);
-      alert("Tüm mamalar başarıyla silindi.");
+      showAlert("Başarılı", "Tüm mamalar başarıyla silindi.", 'success');
     } catch (error) {
       console.error("Error deleting markers:", error);
-      alert("Mamalar silinirken bir hata oluştu.");
+      showAlert("Hata", "Mamalar silinirken bir hata oluştu.", 'danger');
     }
   };
 
@@ -446,7 +523,7 @@ const App: React.FC = () => {
 
     // Allow if admin OR if the user is the owner
     if (!user.isAdmin && markerToDelete.addedBy !== user.name) {
-      alert("Bu mamayı silme yetkiniz yok.");
+      showAlert("Hata", "Bu mamayı silme yetkiniz yok.", 'danger');
       return;
     }
 
@@ -454,10 +531,10 @@ const App: React.FC = () => {
       const markerRef = ref(db, `markers/${id}`);
       await remove(markerRef);
       setMarkers(prev => prev.filter(m => m.id !== id));
-      alert("Mama başarıyla silindi.");
+      showAlert("Başarılı", "Mama başarıyla silindi.", 'success');
     } catch (error) {
       console.error("Error deleting marker:", error);
-      alert("Mama silinirken bir hata oluştu.");
+      showAlert("Hata", "Mama silinirken bir hata oluştu.", 'danger');
     }
   };
 
@@ -492,10 +569,10 @@ const App: React.FC = () => {
 
       await remove(ref(db, `users/${safeUsername}`));
       handleLogout();
-      alert("Hesabınız başarıyla silindi. Eklediğiniz mamalar anonim olarak korunacaktır.");
+      showAlert("Başarılı", "Hesabınız başarıyla silindi. Eklediğiniz mamalar anonim olarak korunacaktır.", 'success');
     } catch (error) {
       console.error("Account deletion error:", error);
-      alert("Hesap silinirken bir hata oluştu.");
+      showAlert("Hata", "Hesap silinirken bir hata oluştu.", 'danger');
     }
   };
 
@@ -529,6 +606,9 @@ const App: React.FC = () => {
             currentLang={language} 
             isAdmin={user.isAdmin}
             onDeleteAll={handleDeleteAllMarkers}
+            showAlert={showAlert}
+            showConfirm={showConfirm}
+            onRequestLocation={requestLocationPermission}
           />
         </div>
         <div className={`absolute inset-0 z-30 bg-slate-50 transition-opacity duration-300 ${view === 'settings' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
@@ -545,6 +625,8 @@ const App: React.FC = () => {
             onLoginAsUser={handleLoginAsUser}
             markerAddingEnabled={markerAddingEnabled}
             onToggleMarkerAdding={handleToggleMarkerAdding}
+            showAlert={showAlert}
+            showConfirm={showConfirm}
           />
         </div>
         <div className={`absolute inset-0 z-10 transition-opacity duration-300 ${view === 'map' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
@@ -559,6 +641,9 @@ const App: React.FC = () => {
             isAdmin={user.isAdmin}
             onDeleteMarker={handleDeleteMarker}
             currentUserName={user.name}
+            showAlert={showAlert}
+            showConfirm={showConfirm}
+            onRequestLocation={requestLocationPermission}
           />
         </div>
       </main>
@@ -620,15 +705,25 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Global Alert/Confirm Modal */}
+      <ConfirmModal 
+        isOpen={alertConfig.isOpen}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        onConfirm={alertConfig.onConfirm}
+        onCancel={alertConfig.onCancel}
+        type={alertConfig.type}
+      />
+
       {/* Account Deleted Modal */}
       <ConfirmModal 
         isOpen={showAccountDeletedModal}
         title="Hesabınız Silindi"
         message="Hesabınız bir yönetici tarafından silinmiştir. Daha fazla bilgi için destek ile iletişime geçebilirsiniz."
         confirmText="Tamam"
-        cancelText=""
         onConfirm={() => setShowAccountDeletedModal(false)}
-        onCancel={() => setShowAccountDeletedModal(false)}
         type="danger"
       />
     </div>

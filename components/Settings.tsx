@@ -15,11 +15,13 @@ interface SettingsProps {
   onBack: () => void;
   onDeleteAccount: () => void;
   isAnonymous: boolean;
-  isAdmin?: boolean;
-  userName?: string;
-  onLoginAsUser?: (username: string) => void;
-  markerAddingEnabled?: boolean;
-  onToggleMarkerAdding?: (enabled: boolean) => void;
+  isAdmin: boolean;
+  userName: string;
+  onLoginAsUser: (username: string) => void;
+  markerAddingEnabled: boolean;
+  onToggleMarkerAdding: (enabled: boolean) => void;
+  showAlert: (title: string, message: string, type?: 'danger' | 'warning' | 'info' | 'success', onConfirm?: () => void) => void;
+  showConfirm: (title: string, message: string, onConfirm: () => void, type?: 'danger' | 'warning' | 'info') => void;
 }
 
 interface AdminData {
@@ -60,7 +62,9 @@ const Settings: React.FC<SettingsProps> = ({
   userName,
   onLoginAsUser,
   markerAddingEnabled,
-  onToggleMarkerAdding
+  onToggleMarkerAdding,
+  showAlert,
+  showConfirm
 }) => {
   const t = translations[currentLang];
   const [users, setUsers] = useState<UserData[]>([]);
@@ -71,7 +75,7 @@ const Settings: React.FC<SettingsProps> = ({
   const [loadingAdmins, setLoadingAdmins] = useState(false);
   
   // Modal State
-  const [confirmModal, setConfirmModal] = useState<{
+  const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
     title: string;
     message: string;
@@ -139,20 +143,20 @@ const Settings: React.FC<SettingsProps> = ({
       setNewAdminKey('');
       setShowAdminForm(false);
       fetchAdmins();
-      alert("Yeni yönetici başarıyla eklendi.");
+      showAlert("Başarılı", "Yeni yönetici başarıyla eklendi.", 'success');
     } catch (error) {
       console.error("Error adding admin:", error);
-      alert("Yönetici eklenirken bir hata oluştu.");
+      showAlert("Hata", "Yönetici eklenirken bir hata oluştu.", 'danger');
     }
   };
 
   const handleDeleteAdmin = async (id: string, name: string) => {
     if (!db || ['eralp ergün', 'sabri ahirzaman'].includes(name.trim().toLowerCase())) {
-      alert("Bu yönetici silinemez.");
+      showAlert("Bilgi", "Bu yönetici silinemez.", 'info');
       return;
     }
 
-    setConfirmModal({
+    setModalConfig({
       isOpen: true,
       title: 'Yöneticiyi Sil',
       message: `${name} yöneticisini silmek istediğinize emin misiniz?`,
@@ -162,7 +166,7 @@ const Settings: React.FC<SettingsProps> = ({
         try {
           await remove(ref(db, `admins/${id}`));
           fetchAdmins();
-          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          setModalConfig(prev => ({ ...prev, isOpen: false }));
         } catch (error) {
           console.error("Error deleting admin:", error);
         }
@@ -194,7 +198,7 @@ const Settings: React.FC<SettingsProps> = ({
   const handleDeleteUser = async (username: string) => {
     if (!db) return;
     
-    setConfirmModal({
+    setModalConfig({
       isOpen: true,
       title: 'Kullanıcıyı Sil',
       message: `${username} kullanıcısını silmek istediğinize emin misiniz?`,
@@ -222,10 +226,10 @@ const Settings: React.FC<SettingsProps> = ({
 
           await remove(ref(db, `users/${username}`));
           setUsers(prev => prev.filter(u => u.username !== username));
-          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          setModalConfig(prev => ({ ...prev, isOpen: false }));
         } catch (error) {
           console.error("Error deleting user:", error);
-          alert("Kullanıcı silinirken bir hata oluştu.");
+          showAlert("Hata", "Kullanıcı silinirken bir hata oluştu.", 'danger');
         }
       }
     });
@@ -519,7 +523,7 @@ const Settings: React.FC<SettingsProps> = ({
           
           <button
             onClick={() => {
-              setConfirmModal({
+              setModalConfig({
                 isOpen: true,
                 title: 'Hesabımı Sil',
                 message: 'Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
@@ -527,7 +531,7 @@ const Settings: React.FC<SettingsProps> = ({
                 type: 'danger',
                 onConfirm: () => {
                   onDeleteAccount();
-                  setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                  setModalConfig(prev => ({ ...prev, isOpen: false }));
                 }
               });
             }}
@@ -540,14 +544,14 @@ const Settings: React.FC<SettingsProps> = ({
       )}
 
       <ConfirmModal 
-        isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        confirmText={confirmModal.confirmText}
+        isOpen={modalConfig.isOpen}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText={modalConfig.confirmText}
         cancelText="İptal"
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-        type={confirmModal.type}
+        onConfirm={modalConfig.onConfirm}
+        onCancel={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
+        type={modalConfig.type}
       />
     </div>
   );

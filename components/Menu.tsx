@@ -14,6 +14,7 @@ interface MenuProps {
     staleCount: number;
     lastAdded: any;
     isLocationEnabled: boolean;
+    locationStatus: string;
   };
   markers: FoodMarker[];
   onOpenMap: () => void;
@@ -22,13 +23,16 @@ interface MenuProps {
   currentLang: LanguageCode;
   isAdmin?: boolean;
   onDeleteAll?: () => void;
+  showAlert: (title: string, message: string, type?: 'danger' | 'warning' | 'info' | 'success', onConfirm?: () => void) => void;
+  showConfirm: (title: string, message: string, onConfirm: () => void, type?: 'danger' | 'warning' | 'info') => void;
+  onRequestLocation: () => void;
 }
 
 const locales: Record<LanguageCode, any> = {
   tr, en: enUS, it, fr, de, es, pt, ru, jp: ja, ar: arSA
 };
 
-const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, userName, currentLang, isAdmin, onDeleteAll }) => {
+const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, userName, currentLang, isAdmin, onDeleteAll, showAlert, showConfirm, onRequestLocation }) => {
   const t = translations[currentLang];
   const locale = locales[currentLang] || tr;
 
@@ -58,9 +62,12 @@ const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, 
       {isAdmin && (
         <button 
           onClick={() => {
-            if (window.confirm('Tüm mamaları silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) {
-              onDeleteAll?.();
-            }
+            showConfirm(
+              'Tüm Mamaları Sil',
+              'Tüm mamaları silmek istediğinize emin misiniz? Bu işlem geri alınamaz!',
+              () => onDeleteAll?.(),
+              'danger'
+            );
           }}
           className="w-full bg-red-500 p-5 rounded-[2rem] text-white flex items-center justify-center gap-3 hover:bg-red-600 transition-colors shadow-xl shadow-red-200"
         >
@@ -92,7 +99,12 @@ const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, 
               <Navigation size={22} />
             </div>
             {!stats.isLocationEnabled && (
-              <span className="text-[10px] bg-red-500 text-white px-3 py-1 rounded-full font-black uppercase tracking-wider animate-pulse">{t.locationDisabled}</span>
+              <button 
+                onClick={onRequestLocation}
+                className="text-[10px] bg-red-500 text-white px-3 py-1 rounded-full font-black uppercase tracking-wider animate-pulse hover:bg-red-600 transition-colors"
+              >
+                {t.enableLocation || "Konumu Etkinleştir"}
+              </button>
             )}
           </div>
           <div>

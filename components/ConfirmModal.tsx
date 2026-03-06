@@ -1,16 +1,16 @@
 
 import React from 'react';
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle, X, Check } from 'lucide-react';
 
 interface ConfirmModalProps {
   isOpen: boolean;
   title: string;
   message: string;
   confirmText: string;
-  cancelText: string;
+  cancelText?: string;
   onConfirm: () => void;
-  onCancel: () => void;
-  type?: 'danger' | 'warning' | 'info';
+  onCancel?: () => void;
+  type?: 'danger' | 'warning' | 'info' | 'success';
 }
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -40,6 +40,11 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       icon: <AlertCircle className="text-blue-500" size={32} />,
       button: "bg-blue-500 hover:bg-blue-600 shadow-blue-100",
       bg: "bg-blue-50"
+    },
+    success: {
+      icon: <Check className="text-green-500" size={32} />,
+      button: "bg-green-500 hover:bg-green-600 shadow-green-100",
+      bg: "bg-green-50"
     }
   };
 
@@ -67,12 +72,14 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             >
               {confirmText}
             </button>
-            <button
-              onClick={onCancel}
-              className="w-full py-4 rounded-2xl bg-slate-100 text-slate-500 font-bold uppercase tracking-widest text-sm hover:bg-slate-200 transition-all active:scale-95"
-            >
-              {cancelText}
-            </button>
+            {cancelText && onCancel && (
+              <button
+                onClick={onCancel}
+                className="w-full py-4 rounded-2xl bg-slate-100 text-slate-500 font-bold uppercase tracking-widest text-sm hover:bg-slate-200 transition-all active:scale-95"
+              >
+                {cancelText}
+              </button>
+            )}
           </div>
         </div>
       </div>

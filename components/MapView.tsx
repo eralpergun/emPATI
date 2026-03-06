@@ -21,6 +21,9 @@ interface MapViewProps {
   isAdmin?: boolean;
   onDeleteMarker?: (id: string) => void;
   currentUserName?: string;
+  showAlert: (title: string, message: string, type?: 'danger' | 'warning' | 'info' | 'success', onConfirm?: () => void) => void;
+  showConfirm: (title: string, message: string, onConfirm: () => void, type?: 'danger' | 'warning' | 'info') => void;
+  onRequestLocation: () => void;
 }
 
 const locales: Record<LanguageCode, any> = {
@@ -35,7 +38,7 @@ const SUBDOMAINS = ['mt0', 'mt1', 'mt2', 'mt3'];
 const CAT_PNG = "https://cdn-icons-png.flaticon.com/512/1864/1864514.png";
 const DOG_PNG = "https://cdn-icons-png.flaticon.com/512/1998/1998627.png";
 
-const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible, isAdmin, onDeleteMarker, currentUserName }) => {
+const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible, isAdmin, onDeleteMarker, currentUserName, showAlert, showConfirm, onRequestLocation }) => {
   const mapRef = useRef<L.Map>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [initialCenterDone, setInitialCenterDone] = useState(false);
@@ -201,11 +204,21 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           <p className="font-black text-slate-800 tracking-tight text-lg">{t.locSearching}</p>
           <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{t.locDesc || "GPS Sinyali Bekleniyor..."}</p>
         </div>
-        <div className={`transition-all duration-500 ${showSkipButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-          <button onClick={() => setForceOpen(true)} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 shadow-lg rounded-2xl text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors">
-            {t.openMapAnyway || "Haritayı Yine de Aç"}
-            <ArrowRight size={16} />
+        <div className="flex flex-col gap-3 w-full max-w-[200px]">
+          <button 
+            onClick={onRequestLocation}
+            className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white shadow-xl shadow-blue-200 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all active:scale-95"
+          >
+            <Navigation2 size={18} fill="currentColor" />
+            {t.retryLocation || "Konumu Yenile"}
           </button>
+          
+          <div className={`transition-all duration-500 ${showSkipButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+            <button onClick={() => setForceOpen(true)} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 shadow-lg rounded-2xl text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors">
+              {t.openMapAnyway || "Haritayı Yine de Aç"}
+              <ArrowRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -314,9 +327,17 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
       </div>
 
       {!userLocation && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[2000] bg-red-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-bounce-slow">
-           <AlertCircle size={16} />
-           <span className="text-xs font-bold">{t.locNotActive || "Konum etkin değil"}</span>
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[2000] flex flex-col items-center gap-2">
+          <div className="bg-red-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-bounce-slow">
+            <AlertCircle size={16} />
+            <span className="text-xs font-bold">{t.locNotActive || "Konum etkin değil"}</span>
+          </div>
+          <button 
+            onClick={onRequestLocation}
+            className="bg-white/90 backdrop-blur-md text-blue-600 px-4 py-2 rounded-full shadow-lg text-[10px] font-black uppercase tracking-wider border border-blue-100 active:scale-95"
+          >
+            {t.retryLocation || "Konumu Yenile"}
+          </button>
         </div>
       )}
 
