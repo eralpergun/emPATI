@@ -554,6 +554,22 @@ const App: React.FC = () => {
     setView('menu');
   };
 
+  const handleDeleteAccount = async (username: string) => {
+    if (!db) return;
+    try {
+      const safeUsername = username.trim().replace(/[.#$\[\]\/]/g, '_');
+      await remove(ref(db, `users/${safeUsername}`));
+      
+      if (user?.name === username) {
+        showAlert("Bilgi", "Hesabınız silindi.", 'info', handleLogout);
+      } else {
+        showAlert("Başarılı", "Hesap silindi.", 'success');
+      }
+    } catch (error) {
+      console.error("Account deletion error:", error);
+    }
+  };
+
   return (
     <div className="h-screen w-full flex flex-col relative overflow-hidden bg-slate-50">
       {(!user || view === 'login') ? (
@@ -602,6 +618,7 @@ const App: React.FC = () => {
                 notificationSetting={notificationSetting}
                 onNotificationSettingChange={handleNotificationSettingChange}
                 onBack={() => setView('menu')} 
+                onDeleteAccount={handleDeleteAccount}
                 isAnonymous={user?.name === '@@ANONYMOUS@@'}
                 isAdmin={!!user?.isAdmin}
                 userName={user?.name || ''}
