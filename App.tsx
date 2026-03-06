@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<View>('login');
   const [markers, setMarkers] = useState<FoodMarker[]>([]);
+  const [markerAddingEnabled, setMarkerAddingEnabled] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationAccuracy, setLocationAccuracy] = useState<number>(Infinity);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
@@ -342,6 +343,22 @@ const App: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [user, db]);
 
+  useEffect(() => {
+    if (!isConfigured || !db) return;
+
+    const settingsRef = ref(db, 'settings');
+    const unsubscribe = onValue(settingsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        if (typeof data.markerAddingEnabled === 'boolean') {
+          setMarkerAddingEnabled(data.markerAddingEnabled);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isConfigured, db]);
+
   const handleLanguageChange = (lang: LanguageCode) => {
     setLanguage(lang);
     localStorage.setItem('empati_lang', lang);
@@ -352,8 +369,22 @@ const App: React.FC = () => {
     localStorage.setItem('empati_notif_setting', setting);
   };
 
+  const handleToggleMarkerAdding = async (enabled: boolean) => {
+    if (!db || !user?.isAdmin) return;
+    try {
+      await set(ref(db, 'settings/markerAddingEnabled'), enabled);
+    } catch (error) {
+      console.error("Error toggling marker adding:", error);
+    }
+  };
+
   const addMarker = async (lat: number, lng: number, type: 'cat' | 'dog' | 'both') => {
     if (!user) return;
+
+    if (!markerAddingEnabled && !user.isAdmin) {
+      alert("Mama ekleme geçici bir süre boyunca kapalıdır.");
+      return;
+    }
     
     const newMarker: Omit<FoodMarker, 'id'> = {
       lat,
@@ -512,6 +543,8 @@ const App: React.FC = () => {
             isAdmin={!!user.isAdmin}
             userName={user.name}
             onLoginAsUser={handleLoginAsUser}
+            markerAddingEnabled={markerAddingEnabled}
+            onToggleMarkerAdding={handleToggleMarkerAdding}
           />
         </div>
         <div className={`absolute inset-0 z-10 transition-opacity duration-300 ${view === 'map' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>

@@ -18,6 +18,8 @@ interface SettingsProps {
   isAdmin?: boolean;
   userName?: string;
   onLoginAsUser?: (username: string) => void;
+  markerAddingEnabled?: boolean;
+  onToggleMarkerAdding?: (enabled: boolean) => void;
 }
 
 interface AdminData {
@@ -56,7 +58,9 @@ const Settings: React.FC<SettingsProps> = ({
   isAnonymous,
   isAdmin,
   userName,
-  onLoginAsUser
+  onLoginAsUser,
+  markerAddingEnabled,
+  onToggleMarkerAdding
 }) => {
   const t = translations[currentLang];
   const [users, setUsers] = useState<UserData[]>([]);
@@ -404,6 +408,21 @@ const Settings: React.FC<SettingsProps> = ({
       {/* Super Admin Management */}
       {isSuperAdmin && (
         <div className="space-y-6 pt-8 border-t border-slate-100">
+          <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 leading-none">Mama Eklemeyi Kapat/Aç</h3>
+              <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">
+                Tüm kullanıcılar için mama ekleme özelliğini yönetin
+              </p>
+            </div>
+            <button 
+              onClick={() => onToggleMarkerAdding?.(!markerAddingEnabled)}
+              className={`w-12 h-6 rounded-full transition-all relative ${markerAddingEnabled ? 'bg-green-500' : 'bg-slate-300'}`}
+            >
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${markerAddingEnabled ? 'left-7' : 'left-1'}`} />
+            </button>
+          </div>
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 ml-1">
               <ShieldAlert size={20} className="text-orange-600" />
