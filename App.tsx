@@ -576,78 +576,86 @@ const App: React.FC = () => {
     }
   };
 
-  if (!user || view === 'login') return <Login onLogin={handleLogin} currentLang={language} />;
-
   return (
     <div className="h-screen w-full flex flex-col relative overflow-hidden bg-slate-50">
-      <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 py-4 px-6 flex justify-between items-center z-[3000] shadow-sm">
-        <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setView('menu')}>
-          <Logo size={48} />
-          <h1 className="text-xl font-black text-slate-900 tracking-tight">emPATİ</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          {!isConfigured && (
-            <div className="hidden sm:flex items-center gap-1 px-3 py-1 bg-red-100 text-red-600 rounded-full text-[10px] font-bold uppercase tracking-wider">
-              <WifiOff size={12} /> Offline
+      {(!user || view === 'login') ? (
+        <Login 
+          onLogin={handleLogin} 
+          currentLang={language} 
+          message={showAccountDeletedModal ? t.accountDeletedDesc : undefined}
+        />
+      ) : (
+        <>
+          <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 py-4 px-6 flex justify-between items-center z-[3000] shadow-sm">
+            <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setView('menu')}>
+              <Logo size={48} />
+              <h1 className="text-xl font-black text-slate-900 tracking-tight">emPATİ</h1>
             </div>
-          )}
-          <button onClick={handleLogout} className="text-xs font-black text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest">{t.logout}</button>
-        </div>
-      </header>
+            <div className="flex items-center gap-4">
+              {!isConfigured && (
+                <div className="hidden sm:flex items-center gap-1 px-3 py-1 bg-red-100 text-red-600 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  <WifiOff size={12} /> Offline
+                </div>
+              )}
+              <button onClick={handleLogout} className="text-xs font-black text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest">{t.logout}</button>
+            </div>
+          </header>
 
-      <main className="flex-1 w-full relative">
-        <div className={`absolute inset-0 z-20 bg-slate-50 transition-all duration-300 ${view === 'menu' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-          <Menu 
-            stats={stats} 
-            markers={markers}
-            onOpenMap={() => setView('map')} 
-            onOpenSettings={() => setView('settings')} 
-            userName={resolveName(user.name)} 
-            currentLang={language} 
-            isAdmin={user.isAdmin}
-            onDeleteAll={handleDeleteAllMarkers}
-            showAlert={showAlert}
-            showConfirm={showConfirm}
-            onRequestLocation={requestLocationPermission}
-          />
-        </div>
-        <div className={`absolute inset-0 z-30 bg-slate-50 transition-opacity duration-300 ${view === 'settings' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-          <Settings 
-            currentLang={language} 
-            onLanguageChange={handleLanguageChange} 
-            notificationSetting={notificationSetting}
-            onNotificationSettingChange={handleNotificationSettingChange}
-            onBack={() => setView('menu')} 
-            onDeleteAccount={handleDeleteAccount}
-            isAnonymous={user.name === '@@ANONYMOUS@@'}
-            isAdmin={!!user.isAdmin}
-            userName={user.name}
-            onLoginAsUser={handleLoginAsUser}
-            markerAddingEnabled={markerAddingEnabled}
-            onToggleMarkerAdding={handleToggleMarkerAdding}
-            showAlert={showAlert}
-            showConfirm={showConfirm}
-          />
-        </div>
-        <div className={`absolute inset-0 z-10 transition-opacity duration-300 ${view === 'map' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-          <MapView 
-            markers={markers} 
-            userLocation={userLocation}
-            locationAccuracy={locationAccuracy}
-            onAddMarker={addMarker} 
-            onBack={() => setView('menu')}
-            currentLang={language}
-            isVisible={view === 'map'}
-            isAdmin={user.isAdmin}
-            onDeleteMarker={handleDeleteMarker}
-            currentUserName={user.name}
-            showAlert={showAlert}
-            showConfirm={showConfirm}
-            onRequestLocation={requestLocationPermission}
-          />
-        </div>
-      </main>
-      <BottomNav currentView={view as any} onViewChange={(v) => setView(v as View)} currentLang={language} />
+          <main className="flex-1 w-full relative">
+            <div className={`absolute inset-0 z-20 bg-slate-50 transition-all duration-300 ${view === 'menu' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+              <Menu 
+                stats={stats} 
+                markers={markers}
+                onOpenMap={() => setView('map')} 
+                onOpenSettings={() => setView('settings')} 
+                userName={resolveName(user?.name || '')} 
+                currentLang={language} 
+                isAdmin={user?.isAdmin}
+                onDeleteAll={handleDeleteAllMarkers}
+                showAlert={showAlert}
+                showConfirm={showConfirm}
+                onRequestLocation={requestLocationPermission}
+              />
+            </div>
+            <div className={`absolute inset-0 z-30 bg-slate-50 transition-opacity duration-300 ${view === 'settings' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+              <Settings 
+                currentLang={language} 
+                onLanguageChange={handleLanguageChange} 
+                notificationSetting={notificationSetting}
+                onNotificationSettingChange={handleNotificationSettingChange}
+                onBack={() => setView('menu')} 
+                onDeleteAccount={handleDeleteAccount}
+                isAnonymous={user?.name === '@@ANONYMOUS@@'}
+                isAdmin={!!user?.isAdmin}
+                userName={user?.name || ''}
+                onLoginAsUser={handleLoginAsUser}
+                markerAddingEnabled={markerAddingEnabled}
+                onToggleMarkerAdding={handleToggleMarkerAdding}
+                showAlert={showAlert}
+                showConfirm={showConfirm}
+              />
+            </div>
+            <div className={`absolute inset-0 z-10 transition-opacity duration-300 ${view === 'map' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+              <MapView 
+                markers={markers} 
+                userLocation={userLocation}
+                locationAccuracy={locationAccuracy}
+                onAddMarker={addMarker} 
+                onBack={() => setView('menu')}
+                currentLang={language}
+                isVisible={view === 'map'}
+                isAdmin={user?.isAdmin}
+                onDeleteMarker={handleDeleteMarker}
+                currentUserName={user?.name || ''}
+                showAlert={showAlert}
+                showConfirm={showConfirm}
+                onRequestLocation={requestLocationPermission}
+              />
+            </div>
+          </main>
+          <BottomNav currentView={view as any} onViewChange={(v) => setView(v as View)} currentLang={language} />
+        </>
+      )}
 
       {/* Notifications */}
       <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[6000] w-full max-w-sm px-4 space-y-3 pointer-events-none">
@@ -720,9 +728,9 @@ const App: React.FC = () => {
       {/* Account Deleted Modal */}
       <ConfirmModal 
         isOpen={showAccountDeletedModal}
-        title="Hesabınız Silindi"
-        message="Hesabınız bir yönetici tarafından silinmiştir. Daha fazla bilgi için destek ile iletişime geçebilirsiniz."
-        confirmText="Tamam"
+        title={t.accountDeleted}
+        message={t.accountDeletedDesc}
+        confirmText={t.loginBtn}
         onConfirm={() => setShowAccountDeletedModal(false)}
         type="danger"
       />

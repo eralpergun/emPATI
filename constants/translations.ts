@@ -52,7 +52,9 @@ export const translations: Record<LanguageCode, any> = {
     notifMine: "Sadece Benim Mamalarım",
     notifNone: "Bildirimleri Kapat",
     enableLocation: "Konumu Etkinleştir",
-    retryLocation: "Konumu Yenile"
+    retryLocation: "Konumu Yenile",
+    accountDeleted: "Hesabınız Silindi",
+    accountDeletedDesc: "Hesabınız bir yönetici tarafından silinmiştir. Daha fazla bilgi için destek ile iletişime geçebilirsiniz."
   },
   en: {
     welcome: "Hello",
@@ -104,7 +106,9 @@ export const translations: Record<LanguageCode, any> = {
     notifMine: "Only My Food",
     notifNone: "Turn Off Notifications",
     enableLocation: "Enable Location",
-    retryLocation: "Retry Location"
+    retryLocation: "Retry Location",
+    accountDeleted: "Account Deleted",
+    accountDeletedDesc: "Your account has been deleted by an administrator. You can contact support for more information."
   },
   it: {
     welcome: "Ciao",

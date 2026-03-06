@@ -9,9 +9,10 @@ import { db, ref, get, set, remove, push } from '../lib/firebase';
 interface LoginProps {
   onLogin: (user: User) => void;
   currentLang: LanguageCode;
+  message?: string;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, currentLang, message }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -165,6 +166,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang }) => {
           <p className="text-slate-500 text-base sm:text-lg font-medium">
             {mode === 'admin' ? 'Yönetici Girişi' : (mode === 'register' ? 'Hesap Oluştur' : t.loginTitle)}
           </p>
+          {message && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-bold animate-pulse">
+              {message}
+            </div>
+          )}
         </div>
 
         <div className="bg-white p-6 sm:p-8 rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl border border-slate-100 space-y-5 sm:space-y-6">
