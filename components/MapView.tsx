@@ -32,8 +32,8 @@ const locales: Record<LanguageCode, any> = {
 const TILE_URL = "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}";
 const SUBDOMAINS = ['mt0', 'mt1', 'mt2', 'mt3'];
 
-const CAT_PNG = "https://cdn-icons-png.flaticon.com/512/616/616430.png";
-const DOG_PNG = "https://cdn-icons-png.flaticon.com/512/616/616554.png";
+const CAT_PNG = "https://cdn-icons-png.flaticon.com/512/1864/1864514.png";
+const DOG_PNG = "https://cdn-icons-png.flaticon.com/512/1998/1998627.png";
 
 const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible, isAdmin, onDeleteMarker, currentUserName }) => {
   const mapRef = useRef<L.Map>(null);
@@ -298,7 +298,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
            className={`pointer-events-auto flex-1 p-4 rounded-3xl shadow-xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 border-b-4 ${activeType === 'cat' ? 'bg-orange-600 border-orange-800 text-white scale-105 shadow-orange-500/50' : 'bg-white border-slate-200 text-slate-400 opacity-90 hover:opacity-100 hover:bg-slate-50'}`}
          >
              <div className="w-8 h-8 transition-transform">
-                <img src={CAT_PNG} className={`w-full h-full object-contain ${activeType === 'cat' ? 'brightness-0 invert' : ''}`} alt="Cat" />
+                <img src={CAT_PNG} className="w-full h-full object-contain" alt="Cat" />
              </div>
              <span className={`font-black uppercase tracking-wider text-sm ${activeType === 'cat' ? 'text-white' : 'text-slate-500'}`}>{t.catFood}</span>
          </button>
@@ -307,7 +307,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
            className={`pointer-events-auto flex-1 p-4 rounded-3xl shadow-xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 border-b-4 ${activeType === 'dog' ? 'bg-blue-600 border-blue-800 text-white scale-105 shadow-blue-500/50' : 'bg-white border-slate-200 text-slate-400 opacity-90 hover:opacity-100 hover:bg-slate-50'}`}
          >
              <div className="w-8 h-8 transition-transform">
-                <img src={DOG_PNG} className={`w-full h-full object-contain ${activeType === 'dog' ? 'brightness-0 invert' : ''}`} alt="Dog" />
+                <img src={DOG_PNG} className="w-full h-full object-contain" alt="Dog" />
              </div>
              <span className={`font-black uppercase tracking-wider text-sm ${activeType === 'dog' ? 'text-white' : 'text-slate-500'}`}>{t.dogFood}</span>
          </button>
