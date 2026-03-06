@@ -21,6 +21,7 @@ interface MapViewProps {
   isAdmin?: boolean;
   onDeleteMarker?: (id: string) => void;
   currentUserName?: string;
+  locationAccuracyLevel: 'high' | 'medium' | 'low' | 'none';
   showAlert: (title: string, message: string, type?: 'danger' | 'warning' | 'info' | 'success', onConfirm?: () => void) => void;
   showConfirm: (title: string, message: string, onConfirm: () => void, type?: 'danger' | 'warning' | 'info') => void;
   onRequestLocation: () => void;
@@ -38,7 +39,7 @@ const SUBDOMAINS = ['mt0', 'mt1', 'mt2', 'mt3'];
 const CAT_PNG = "https://cdn-icons-png.flaticon.com/512/1864/1864514.png";
 const DOG_PNG = "https://cdn-icons-png.flaticon.com/512/1998/1998627.png";
 
-const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible, isAdmin, onDeleteMarker, currentUserName, showAlert, showConfirm, onRequestLocation }) => {
+const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible, isAdmin, onDeleteMarker, currentUserName, locationAccuracyLevel, showAlert, showConfirm, onRequestLocation }) => {
   const mapRef = useRef<L.Map>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [initialCenterDone, setInitialCenterDone] = useState(false);
@@ -65,6 +66,13 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const defaultPosition: [number, number] = [41.0082, 28.9784];
   const t = translations[currentLang];
   const locale = locales[currentLang] || tr;
+
+  const accuracyLabels = {
+    high: { text: 'Yüksek Hassasiyet', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    medium: { text: 'Orta Hassasiyet', color: 'text-orange-500', bg: 'bg-orange-50' },
+    low: { text: 'Düşük Hassasiyet', color: 'text-red-500', bg: 'bg-red-50' },
+    none: { text: 'Konum Bekleniyor', color: 'text-slate-400', bg: 'bg-slate-50' }
+  };
 
   // Ultimate fix for "Map not loading" / "Grey Box" issues
   useEffect(() => {
@@ -414,9 +422,24 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
 
       <div className="absolute top-20 right-6 z-[2000] flex flex-col gap-4">
         {userLocation && (
-          <button onClick={handleLocate} className={`p-5 rounded-[2.2rem] shadow-2xl border-2 transition-all active:scale-90 ${isFollowing ? 'bg-blue-600 border-blue-400 text-white' : 'bg-white border-slate-100 text-slate-400'}`}>
-            <Navigation2 size={30} fill={isFollowing ? "currentColor" : "none"} />
-          </button>
+          <>
+            <button onClick={handleLocate} className={`p-5 rounded-[2.2rem] shadow-2xl border-2 transition-all active:scale-90 ${isFollowing ? 'bg-blue-600 border-blue-400 text-white' : 'bg-white border-slate-100 text-slate-400'}`}>
+              <Navigation2 size={30} fill={isFollowing ? "currentColor" : "none"} />
+            </button>
+            <div className={`p-3 rounded-2xl shadow-xl border border-slate-100 flex flex-col items-center gap-1 transition-all ${accuracyLabels[locationAccuracyLevel].bg}`}>
+               <div className={`w-2 h-2 rounded-full animate-pulse ${locationAccuracyLevel === 'high' ? 'bg-emerald-500' : locationAccuracyLevel === 'medium' ? 'bg-orange-500' : 'bg-red-500'}`} />
+               <span className={`text-[8px] font-black uppercase tracking-tighter text-center leading-tight ${accuracyLabels[locationAccuracyLevel].color}`}>
+                 {accuracyLabels[locationAccuracyLevel].text}
+               </span>
+               <button 
+                 onClick={onRequestLocation}
+                 className="mt-1 p-1.5 bg-white rounded-lg shadow-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                 title="Konumu İyileştir"
+               >
+                 <Navigation2 size={12} className="rotate-45" />
+               </button>
+            </div>
+          </>
         )}
       </div>
 

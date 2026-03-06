@@ -25,6 +25,7 @@ const App: React.FC = () => {
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
   const [useHighAccuracy, setUseHighAccuracy] = useState(true);
   const [locationErrorCount, setLocationErrorCount] = useState(0);
+  const [locationAccuracyLevel, setLocationAccuracyLevel] = useState<'high' | 'medium' | 'low' | 'none'>('none');
   const [language, setLanguage] = useState<LanguageCode>('tr');
   const [notificationSetting, setNotificationSetting] = useState<NotificationSetting>(() => {
     return (localStorage.getItem('empati_notif_setting') as NotificationSetting) || 'mine';
@@ -227,8 +228,16 @@ const App: React.FC = () => {
     const handleSuccess = (pos: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = pos.coords;
       
-      // Ignore extremely poor accuracy (over 10km for PCs)
-      if (accuracy > 10000) return;
+      // Ignore extremely poor accuracy (over 5km for PCs/Mobile)
+      if (accuracy > 5000) {
+        setLocationAccuracyLevel('none');
+        return;
+      }
+
+      // Determine accuracy level
+      if (accuracy < 30) setLocationAccuracyLevel('high');
+      else if (accuracy < 150) setLocationAccuracyLevel('medium');
+      else setLocationAccuracyLevel('low');
 
       setUserLocation(prevLoc => {
         if (!prevLoc) {
@@ -241,10 +250,10 @@ const App: React.FC = () => {
         const now = Date.now();
         
         // Update if:
-        // 1. Accuracy is significantly better
-        // 2. User moved more than 5 meters
-        // 3. It's been more than 5 seconds since last update
-        if (accuracy < locationAccuracy * 0.8 || dist > 5 || (now - lastUpdateRef.current > 5000)) {
+        // 1. Accuracy is significantly better (20% improvement)
+        // 2. User moved more than 2 meters
+        // 3. It's been more than 3 seconds since last update
+        if (accuracy < locationAccuracy * 0.8 || dist > 2 || (now - lastUpdateRef.current > 3000)) {
           setLocationAccuracy(accuracy);
           setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
           lastUpdateRef.current = now;
@@ -398,50 +407,41 @@ const App: React.FC = () => {
     localStorage.removeItem('empati_user');
   };
 
-  // Check for account deletion every 10 seconds
+  // Check for account deletion in real-time
   useEffect(() => {
     if (!user || user.name === '@@ANONYMOUS@@' || user.isAdmin || !db) return;
 
     const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
     const userRef = ref(db, `users/${safeUsername}`);
 
-    const checkAccount = async () => {
+    const unsubscribe = onValue(userRef, (snapshot) => {
       if (isBanProcessStartedRef.current) return;
       
-      try {
-        const snapshot = await get(userRef);
-        if (!snapshot.exists()) {
-          isBanProcessStartedRef.current = true;
-          setShowAccountDeletedModal(true);
-          
-          // Start countdown
-          let timeLeft = 10;
+      if (!snapshot.exists()) {
+        isBanProcessStartedRef.current = true;
+        setShowAccountDeletedModal(true);
+        
+        // Start countdown
+        let timeLeft = 10;
+        setBanCountdown(timeLeft);
+        
+        const timer = setInterval(() => {
+          timeLeft -= 1;
           setBanCountdown(timeLeft);
           
-          const timer = setInterval(() => {
-            timeLeft -= 1;
-            setBanCountdown(timeLeft);
-            
-            if (timeLeft <= 0) {
-              clearInterval(timer);
-              setBanMessage(t.accountDeletedDesc.replace('{time}', '0'));
-              handleLogout();
-              setShowAccountDeletedModal(false);
-              isBanProcessStartedRef.current = false;
-            }
-          }, 1000);
-        }
-      } catch (error) {
-        console.error("Account check error:", error);
+          if (timeLeft <= 0) {
+            clearInterval(timer);
+            setBanMessage(t.accountDeletedDesc.replace('{time}', '0'));
+            handleLogout();
+            setShowAccountDeletedModal(false);
+            isBanProcessStartedRef.current = false;
+          }
+        }, 1000);
       }
-    };
+    });
 
-    // Initial check
-    checkAccount();
-
-    const intervalId = setInterval(checkAccount, 10000);
-    return () => clearInterval(intervalId);
-  }, [user, db]);
+    return () => unsubscribe();
+  }, [user, db, t]);
 
   useEffect(() => {
     if (!isConfigured || !db) return;
@@ -495,11 +495,23 @@ const App: React.FC = () => {
     };
 
     // Optimistically update local state immediately
-    const tempId = Math.random().toString();
+    const tempId = `temp_${Date.now()}`;
     setMarkers(prev => [...prev, { ...newMarker, id: tempId }]);
 
     if (isConfigured && db) {
       try {
+        // Double check if user still exists before adding marker
+        if (user.name !== '@@ANONYMOUS@@' && !user.isAdmin) {
+          const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
+          const userCheck = await get(ref(db, `users/${safeUsername}`));
+          if (!userCheck.exists()) {
+            setMarkers(prev => prev.filter(m => m.id !== tempId));
+            showAlert("Hata", "Hesabınız silindiği için mama ekleyemezsiniz.", 'danger');
+            handleLogout();
+            return;
+          }
+        }
+
         const markersRef = ref(db, 'markers');
         await push(markersRef, newMarker);
         
@@ -551,8 +563,10 @@ const App: React.FC = () => {
     }
 
     try {
-      const markerRef = ref(db, `markers/${id}`);
-      await remove(markerRef);
+      if (!id.startsWith('temp_')) {
+        const markerRef = ref(db, `markers/${id}`);
+        await remove(markerRef);
+      }
       setMarkers(prev => prev.filter(m => m.id !== id));
       showAlert("Başarılı", "Mama başarıyla silindi.", 'success');
     } catch (error) {
@@ -670,6 +684,7 @@ const App: React.FC = () => {
                 isAdmin={user?.isAdmin}
                 onDeleteMarker={handleDeleteMarker}
                 currentUserName={user?.name || ''}
+                locationAccuracyLevel={locationAccuracyLevel}
                 showAlert={showAlert}
                 showConfirm={showConfirm}
                 onRequestLocation={requestLocationPermission}
