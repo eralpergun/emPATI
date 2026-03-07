@@ -26,7 +26,6 @@ const App: React.FC = () => {
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
   const [useHighAccuracy, setUseHighAccuracy] = useState(true);
   const [locationErrorCount, setLocationErrorCount] = useState(0);
-  const [locationAccuracyLevel, setLocationAccuracyLevel] = useState<'high' | 'medium' | 'low' | 'none'>('none');
   const [language, setLanguage] = useState<LanguageCode>('tr');
   const [notificationSetting, setNotificationSetting] = useState<NotificationSetting>(() => {
     return (localStorage.getItem('empati_notif_setting') as NotificationSetting) || 'mine';
@@ -218,23 +217,17 @@ const App: React.FC = () => {
 
     const geoOptions: PositionOptions = {
       enableHighAccuracy: useHighAccuracy,
-      timeout: 20000, 
-      maximumAge: 10000 
+      timeout: 30000, 
+      maximumAge: 5000 
     };
 
     const handleSuccess = (pos: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = pos.coords;
       
-      // Ignore extremely poor accuracy (over 5km for PCs/Mobile)
-      if (accuracy > 5000) {
-        setLocationAccuracyLevel('none');
+      // Ignore extremely poor accuracy (over 10km for PCs/Mobile)
+      if (accuracy > 10000) {
         return;
       }
-
-      // Determine accuracy level
-      if (accuracy < 30) setLocationAccuracyLevel('high');
-      else if (accuracy < 150) setLocationAccuracyLevel('medium');
-      else setLocationAccuracyLevel('low');
 
       setUserLocation(prevLoc => {
         if (!prevLoc) {
@@ -247,10 +240,10 @@ const App: React.FC = () => {
         const now = Date.now();
         
         // Update if:
-        // 1. Accuracy is significantly better (20% improvement)
-        // 2. User moved more than 2 meters
-        // 3. It's been more than 3 seconds since last update
-        if (accuracy < locationAccuracy * 0.8 || dist > 2 || (now - lastUpdateRef.current > 3000)) {
+        // 1. Accuracy is significantly better (10% improvement)
+        // 2. User moved more than 5 meters
+        // 3. It's been more than 5 seconds since last update
+        if (accuracy < locationAccuracy * 0.9 || dist > 5 || (now - lastUpdateRef.current > 5000)) {
           setLocationAccuracy(accuracy);
           setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
           lastUpdateRef.current = now;
@@ -654,7 +647,6 @@ const App: React.FC = () => {
                 isAdmin={user?.isAdmin}
                 onDeleteMarker={handleDeleteMarker}
                 currentUserName={user?.name || ''}
-                locationAccuracyLevel={locationAccuracyLevel}
                 showAlert={showAlert}
                 showConfirm={showConfirm}
                 onRequestLocation={requestLocationPermission}
