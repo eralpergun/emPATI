@@ -478,7 +478,11 @@ const App: React.FC = () => {
           }
 
           const markersRef = ref(db, 'markers');
-          await push(markersRef, newMarker);
+          const newMarkerRef = await push(markersRef, newMarker);
+          const actualId = newMarkerRef.key;
+
+          // Update local state with actual ID
+          setMarkers(prev => prev.map(m => m.id === tempId ? { ...m, id: actualId || tempId } : m));
           
           // Update user's last activity if not anonymous
           if (user.name !== '@@ANONYMOUS@@' && !user.isAdmin) {

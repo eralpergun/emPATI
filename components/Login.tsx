@@ -174,6 +174,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
         </div>
 
         <div className="bg-white p-6 sm:p-8 rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl border border-slate-100 space-y-5 sm:space-y-6">
+          {!registrationEnabled && (
+            <div className="bg-orange-50 text-orange-700 p-4 rounded-[1.5rem] text-center font-bold text-sm">
+              Hesap oluşturma kapalıdır.
+            </div>
+          )}
           {mode === 'admin' ? (
             <form onSubmit={handleAdminLogin} className="space-y-4">
               <div>
@@ -287,7 +292,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
                   </button>
                 )}
                 
-                {mode === 'login' && (
+                {mode === 'login' && registrationEnabled && (
                   <button
                     type="button"
                     onClick={handleAnonymous}
