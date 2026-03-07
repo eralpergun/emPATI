@@ -452,62 +452,73 @@ const App: React.FC = () => {
     }
   };
 
+  const markerTimestampsRef = useRef<number[]>([]);
+
   const addMarker = async (lat: number, lng: number, type: 'cat' | 'dog' | 'both') => {
     if (!user) return;
+
+    const proceedAddMarker = async () => {
+      const newMarker: Omit<FoodMarker, 'id'> = {
+        lat,
+        lng,
+        addedBy: user.name,
+        timestamp: Date.now(),
+        type: type 
+      };
+
+      // Optimistically update local state immediately
+      const tempId = `temp_${Date.now()}`;
+      setMarkers(prev => [...prev, { ...newMarker, id: tempId }]);
+
+      if (isConfigured && db) {
+        try {
+          // Double check if user still exists before adding marker
+          if (user.name !== '@@ANONYMOUS@@' && !user.isAdmin) {
+            const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
+            const userCheck = await get(ref(db, `users/${safeUsername}`));
+            if (!userCheck.exists()) {
+              setMarkers(prev => prev.filter(m => m.id !== tempId));
+              showAlert("Hata", "Hesabınız silindiği için mama ekleyemezsiniz.", 'danger');
+              handleLogout();
+              return;
+            }
+          }
+
+          const markersRef = ref(db, 'markers');
+          await push(markersRef, newMarker);
+          
+          // Update user's last activity if not anonymous
+          if (user.name !== '@@ANONYMOUS@@' && !user.isAdmin) {
+            const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
+            const lastActivityRef = ref(db, `users/${safeUsername}/lastActivity`);
+            set(lastActivityRef, Date.now()).catch(err => console.error("Activity update error", err));
+          }
+        } catch (e) {
+          console.error("Marker addition error: ", e);
+          showAlert("Hata", "Mama eklenirken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.", 'danger');
+          setMarkers(prev => prev.filter(m => m.id !== tempId));
+        }
+      }
+    };
 
     if (!markerAddingEnabled && !user.isAdmin) {
       showAlert("Bilgi", "Mama ekleme geçici bir süre boyunca kapalıdır.", 'info');
       return;
     }
     
-    const newMarker: Omit<FoodMarker, 'id'> = {
-      lat,
-      lng,
-      addedBy: user.name,
-      timestamp: Date.now(),
-      type: type 
-    };
-
-    // Optimistically update local state immediately
-    const tempId = `temp_${Date.now()}`;
-    setMarkers(prev => [...prev, { ...newMarker, id: tempId }]);
-
-    if (isConfigured && db) {
-      try {
-        // Double check if user still exists before adding marker
-        if (user.name !== '@@ANONYMOUS@@' && !user.isAdmin) {
-          const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
-          const userCheck = await get(ref(db, `users/${safeUsername}`));
-          if (!userCheck.exists()) {
-            setMarkers(prev => prev.filter(m => m.id !== tempId));
-            showAlert("Hata", "Hesabınız silindiği için mama ekleyemezsiniz.", 'danger');
-            handleLogout();
-            return;
-          }
-        }
-
-        const markersRef = ref(db, 'markers');
-        await push(markersRef, newMarker);
-        
-        // Update user's last activity if not anonymous
-        if (user.name !== '@@ANONYMOUS@@' && !user.isAdmin) {
-          const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
-          const lastActivityRef = ref(db, `users/${safeUsername}/lastActivity`);
-          // We use set here to update just the timestamp
-          // Note: This assumes the user exists. If they don't (e.g. old session), it might create a partial record or fail silently depending on rules.
-          // Since we created the user on login, it should be fine.
-          set(lastActivityRef, Date.now()).catch(err => console.error("Activity update error", err));
-        }
-
-        // No need to fetch immediately, the interval will catch it eventually for others
-        // and we already have it locally.
-      } catch (e) {
-        console.error("Marker addition error: ", e);
-        showAlert("Hata", "Mama eklenirken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.", 'danger');
-        // Rollback on error if needed, but for now we keep it simple
-        setMarkers(prev => prev.filter(m => m.id !== tempId));
-      }
+    const now = Date.now();
+    const recentTimestamps = markerTimestampsRef.current.filter(t => now - t < 10000);
+    
+    if (recentTimestamps.length >= 5 && !user.isAdmin) {
+      showConfirm("Emin misiniz?", "Kısa sürede çok fazla mama eklediniz. Yine de eklemek istiyor musunuz?", () => {
+        markerTimestampsRef.current = [...recentTimestamps, Date.now()];
+        proceedAddMarker();
+      });
+      return;
     }
+
+    markerTimestampsRef.current = [...recentTimestamps, Date.now()];
+    proceedAddMarker();
   };
 
   const handleDeleteAllMarkers = async () => {
