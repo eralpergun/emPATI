@@ -417,6 +417,22 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, [isConfigured, db]);
 
+  // Check for account deletion in real-time
+  useEffect(() => {
+    if (!isConfigured || !db || !user || user.name === '@@ANONYMOUS@@' || user.isAdmin) return;
+
+    const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
+    const userRef = ref(db, `users/${safeUsername}`);
+    
+    const unsubscribe = onValue(userRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        showAlert("Bilgi", "Hesabınız silindi.", 'info', handleLogout);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isConfigured, db, user]);
+
   const handleLanguageChange = (lang: LanguageCode) => {
     setLanguage(lang);
     localStorage.setItem('empati_lang', lang);
