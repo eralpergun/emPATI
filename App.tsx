@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('login');
   const [markers, setMarkers] = useState<FoodMarker[]>([]);
   const [markerAddingEnabled, setMarkerAddingEnabled] = useState(true);
+  const [adminMarkerAddingEnabled, setAdminMarkerAddingEnabled] = useState(true);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(() => {
     const saved = localStorage.getItem('empati_last_location');
@@ -467,6 +468,9 @@ const App: React.FC = () => {
         if (typeof data.markerAddingEnabled === 'boolean') {
           setMarkerAddingEnabled(data.markerAddingEnabled);
         }
+        if (typeof data.adminMarkerAddingEnabled === 'boolean') {
+          setAdminMarkerAddingEnabled(data.adminMarkerAddingEnabled);
+        }
         if (typeof data.registrationEnabled === 'boolean') {
           setRegistrationEnabled(data.registrationEnabled);
         }
@@ -482,14 +486,24 @@ const App: React.FC = () => {
 
     const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
     const userRef = ref(db, `users/${safeUsername}`);
+    const adminRef = ref(db, `admins/${safeUsername}`);
     
-    const unsubscribe = onValue(userRef, (snapshot) => {
-      if (!snapshot.exists()) {
+    const unsubscribeUser = onValue(userRef, (snapshot) => {
+      if (!snapshot.exists() && !user.isAdmin) {
         showAlert("Bilgi", "Hesabınız silindi.", 'info', handleLogout);
       }
     });
 
-    return () => unsubscribe();
+    const unsubscribeAdmin = onValue(adminRef, (snapshot) => {
+      if (!snapshot.exists() && user.isAdmin) {
+        showAlert("Bilgi", "Yönetici hesabınız silindi.", 'info', handleLogout);
+      }
+    });
+
+    return () => {
+      unsubscribeUser();
+      unsubscribeAdmin();
+    };
   }, [isConfigured, db, user]);
 
   const handleLanguageChange = (lang: LanguageCode) => {
@@ -508,6 +522,15 @@ const App: React.FC = () => {
       await set(ref(db, 'settings/markerAddingEnabled'), enabled);
     } catch (error) {
       console.error("Error toggling marker adding:", error);
+    }
+  };
+
+  const handleToggleAdminMarkerAdding = async (enabled: boolean) => {
+    if (!db || !user?.isAdmin) return;
+    try {
+      await set(ref(db, 'settings/adminMarkerAddingEnabled'), enabled);
+    } catch (error) {
+      console.error("Error toggling admin marker adding:", error);
     }
   };
 
@@ -576,6 +599,19 @@ const App: React.FC = () => {
     if (!markerAddingEnabled && !user.isAdmin) {
       showAlert("Bilgi", "Mama ekleme geçici bir süre boyunca kapalıdır.", 'info');
       return;
+    }
+
+    if (user.isAdmin && !adminMarkerAddingEnabled) {
+      // Check if current user is super admin
+      const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
+      const adminRef = ref(db, `admins/${safeUsername}`);
+      const snapshot = await get(adminRef);
+      const isAdminSuper = snapshot.exists() && !!snapshot.val().isSuperAdmin;
+
+      if (!isAdminSuper) {
+        showAlert("Bilgi", "Yöneticiler için mama ekleme şu an kapalıdır.", 'info');
+        return;
+      }
     }
     
     const now = Date.now();
@@ -646,7 +682,20 @@ const App: React.FC = () => {
       async () => {
         try {
           const safeUsername = username.trim().replace(/[.#$\[\]\/]/g, '_');
-          await remove(ref(db, `users/${safeUsername}`));
+          
+          // Check if it's an admin or user
+          const userRef = ref(db, `users/${safeUsername}`);
+          const adminRef = ref(db, `admins/${safeUsername}`);
+          
+          const userSnap = await get(userRef);
+          const adminSnap = await get(adminRef);
+
+          if (userSnap.exists()) {
+            await remove(userRef);
+          }
+          if (adminSnap.exists()) {
+            await remove(adminRef);
+          }
           
           if (user?.name === username) {
             showAlert("Bilgi", "Hesabınız silindi.", 'info', handleLogout);
@@ -717,6 +766,8 @@ const App: React.FC = () => {
                 onLoginAsUser={handleLoginAsUser}
                 markerAddingEnabled={markerAddingEnabled}
                 onToggleMarkerAdding={handleToggleMarkerAdding}
+                adminMarkerAddingEnabled={adminMarkerAddingEnabled}
+                onToggleAdminMarkerAdding={handleToggleAdminMarkerAdding}
                 registrationEnabled={registrationEnabled}
                 onToggleRegistration={handleToggleRegistration}
                 showAlert={showAlert}

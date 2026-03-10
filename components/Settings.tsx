@@ -6,7 +6,6 @@ import { Globe, Check, Trash2, Bell, Users, Search, Eye, EyeOff, ShieldAlert, Us
 import { translations } from '../constants/translations';
 import { db, ref, get, remove, update, push, set } from '../lib/firebase';
 import ConfirmModal from './ConfirmModal';
-import { hashPassword } from '../utils/hash';
 
 interface SettingsProps {
   currentLang: LanguageCode;
@@ -21,6 +20,8 @@ interface SettingsProps {
   onLoginAsUser: (username: string) => void;
   markerAddingEnabled: boolean;
   onToggleMarkerAdding: (enabled: boolean) => void;
+  adminMarkerAddingEnabled: boolean;
+  onToggleAdminMarkerAdding: (enabled: boolean) => void;
   registrationEnabled: boolean;
   onToggleRegistration: (enabled: boolean) => void;
   showAlert: (title: string, message: string, type?: 'danger' | 'warning' | 'info' | 'success', onConfirm?: () => void) => void;
@@ -68,6 +69,8 @@ const Settings: React.FC<SettingsProps> = ({
   onLoginAsUser,
   markerAddingEnabled,
   onToggleMarkerAdding,
+  adminMarkerAddingEnabled,
+  onToggleAdminMarkerAdding,
   registrationEnabled,
   onToggleRegistration,
   showAlert,
@@ -159,12 +162,11 @@ const Settings: React.FC<SettingsProps> = ({
     try {
       // Use username as key for admin
       const safeUsername = newAdminUsername.trim().replace(/[.#$\[\]\/]/g, '_');
-      const hashedPassword = await hashPassword(newAdminKey);
       const adminRef = ref(db, `admins/${safeUsername}`);
       await set(adminRef, {
         name: newAdminName,
         username: newAdminUsername,
-        password: hashedPassword,
+        password: newAdminKey,
         isSuperAdmin: newAdminIsSuper
       });
       setNewAdminName('');
@@ -438,6 +440,21 @@ const Settings: React.FC<SettingsProps> = ({
               className={`w-12 h-6 rounded-full transition-all relative ${markerAddingEnabled ? 'bg-green-500' : 'bg-slate-300'}`}
             >
               <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${markerAddingEnabled ? 'left-7' : 'left-1'}`} />
+            </button>
+          </div>
+
+          <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 leading-none">Admin Mama Eklemeyi Kapat/Aç</h3>
+              <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">
+                Normal yöneticilerin mama ekleme yetkisini yönetin (Süper Adminler hariç)
+              </p>
+            </div>
+            <button 
+              onClick={() => onToggleAdminMarkerAdding?.(!adminMarkerAddingEnabled)}
+              className={`w-12 h-6 rounded-full transition-all relative ${adminMarkerAddingEnabled ? 'bg-green-500' : 'bg-slate-300'}`}
+            >
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${adminMarkerAddingEnabled ? 'left-7' : 'left-1'}`} />
             </button>
           </div>
 
