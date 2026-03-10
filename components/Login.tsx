@@ -87,22 +87,22 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
         }
       } else {
         // Initialize with defaults if empty
-        const defaults = {
-          'eralp': 'Eralp Ergün',
-          'sabri': 'Sabri Ahirzaman',
-          'nehir': 'Nehir Çatalbaş',
-          'tibet': 'Tibet Şahin'
-        };
+        const admins = [
+          { name: 'Eralp Ergün', password: 'eralp' },
+          { name: 'Sabri Ahirzaman', password: 'sabri' },
+          { name: 'Nehir Çatalbaş', password: 'nehir' },
+          { name: 'Tibet Şahin', password: 'tibet' }
+        ];
         
-        for (const [key, name] of Object.entries(defaults)) {
-          const adminRef = ref(db, `admins/${key}`);
-          const hashedPassword = await bcrypt.hash(key, 10);
-          await set(adminRef, { name, key: hashedPassword });
+        for (const admin of admins) {
+          const adminRef = ref(db, `admins/${admin.name}`);
+          const hashedPassword = await bcrypt.hash(admin.password, 10);
+          await set(adminRef, { name: admin.name, key: hashedPassword });
           
           const match = await bcrypt.compare(password.trim(), hashedPassword);
-          if (name === username.trim() && match) {
+          if (admin.name === username.trim() && match) {
             isAdmin = true;
-            adminName = name;
+            adminName = admin.name;
           }
         }
       }
