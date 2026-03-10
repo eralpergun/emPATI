@@ -434,7 +434,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
             };
 
             const canDelete = isSuperAdmin || 
-                             (isAdmin && !marker.isSuperAdminAdded) || 
+                             (isAdmin && !marker.isSuperAdmin) || 
                              (marker.addedBy === currentUserName);
 
             return (
