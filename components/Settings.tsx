@@ -29,7 +29,9 @@ interface SettingsProps {
 interface AdminData {
   id: string;
   name: string;
-  key: string;
+  username: string;
+  password: string;
+  isSuperAdmin?: boolean;
 }
 
 interface UserData {
@@ -99,19 +101,35 @@ const Settings: React.FC<SettingsProps> = ({
 
   // Admin Management State
   const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminUsername, setNewAdminUsername] = useState('');
   const [newAdminKey, setNewAdminKey] = useState('');
+  const [newAdminIsSuper, setNewAdminIsSuper] = useState(false);
   const [showAdminForm, setShowAdminForm] = useState(false);
   
-  const isSuperAdmin = ['eralp ergün', 'sabri ahirzaman'].includes(userName?.trim().toLowerCase() || '');
-
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  
   useEffect(() => {
     if (isAdmin) {
+      setIsSuperAdmin(['eralpergun'].includes(userName?.trim().toLowerCase() || ''));
       fetchUsers();
-      if (isSuperAdmin) {
-        fetchAdmins();
-      }
+      // Check if current admin is super admin
+      const checkSuperAdmin = async () => {
+        if (!db) return;
+        const safeUsername = userName.trim().replace(/[.#$\[\]\/]/g, '_');
+        const adminRef = ref(db, `admins/${safeUsername}`);
+        const snapshot = await get(adminRef);
+        if (snapshot.exists()) {
+          const adminData = snapshot.val();
+          const superAdmin = !!adminData.isSuperAdmin;
+          setIsSuperAdmin(superAdmin);
+          if (superAdmin) {
+            fetchAdmins();
+          }
+        }
+      };
+      checkSuperAdmin();
     }
-  }, [isAdmin, userName, isSuperAdmin]);
+  }, [isAdmin, userName]);
 
   const fetchAdmins = async () => {
     if (!db) return;
@@ -136,17 +154,22 @@ const Settings: React.FC<SettingsProps> = ({
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!db || !newAdminName || !newAdminKey) return;
+    if (!db || !newAdminName || !newAdminUsername || !newAdminKey) return;
 
     try {
-      const adminsRef = ref(db, 'admins');
-      const newAdminRef = push(adminsRef);
-      await set(newAdminRef, {
+      // Use username as key for admin
+      const safeUsername = newAdminUsername.trim().replace(/[.#$\[\]\/]/g, '_');
+      const adminRef = ref(db, `admins/${safeUsername}`);
+      await set(adminRef, {
         name: newAdminName,
-        key: newAdminKey
+        username: newAdminUsername,
+        password: newAdminKey,
+        isSuperAdmin: newAdminIsSuper
       });
       setNewAdminName('');
+      setNewAdminUsername('');
       setNewAdminKey('');
+      setNewAdminIsSuper(false);
       setShowAdminForm(false);
       fetchAdmins();
       showAlert("Başarılı", "Yeni yönetici başarıyla eklendi.", 'success');
@@ -156,8 +179,9 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  const handleDeleteAdmin = async (id: string, name: string) => {
-    if (!db || ['eralp ergün', 'sabri ahirzaman'].includes(name.trim().toLowerCase())) {
+  const handleDeleteAdmin = async (id: string, username: string) => {
+    // Super admins can delete anyone, except 'eralpergun'
+    if (!db || (username?.trim().toLowerCase() === 'eralpergun')) {
       showAlert("Bilgi", "Bu yönetici silinemez.", 'info');
       return;
     }
@@ -165,7 +189,7 @@ const Settings: React.FC<SettingsProps> = ({
     setModalConfig({
       isOpen: true,
       title: 'Yöneticiyi Sil',
-      message: `${name} yöneticisini silmek istediğinize emin misiniz?`,
+      message: `Bu yöneticiyi silmek istediğinize emin misiniz?`,
       confirmText: 'Evet, Sil',
       type: 'danger',
       onConfirm: async () => {
@@ -468,12 +492,29 @@ const Settings: React.FC<SettingsProps> = ({
               />
               <input 
                 type="text"
+                placeholder="Yönetici Kullanıcı Adı"
+                value={newAdminUsername}
+                onChange={(e) => setNewAdminUsername(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-white border border-orange-200 focus:border-orange-500 outline-none font-bold"
+                required
+              />
+              <input 
+                type="text"
                 placeholder="Giriş Şifresi (Key)"
                 value={newAdminKey}
                 onChange={(e) => setNewAdminKey(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-white border border-orange-200 focus:border-orange-500 outline-none font-bold"
                 required
               />
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer">
+                <input 
+                  type="checkbox"
+                  checked={newAdminIsSuper}
+                  onChange={(e) => setNewAdminIsSuper(e.target.checked)}
+                  className="w-5 h-5 rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+                />
+                Süper Admin Yap
+              </label>
               <button 
                 type="submit"
                 className="w-full bg-orange-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-orange-200"
@@ -499,13 +540,13 @@ const Settings: React.FC<SettingsProps> = ({
                     <div>
                       <p className="font-black text-slate-900 leading-none">{admin.name}</p>
                       <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
-                        Key: {admin.key}
+                        Kullanıcı Adı: {admin.username} • Şifre: {admin.password} {admin.isSuperAdmin && '• SÜPER ADMIN'}
                       </p>
                     </div>
                   </div>
-                  {!['eralp ergün', 'sabri ahirzaman'].includes(admin.name.trim().toLowerCase()) && (
+                  {!['eralpergun'].includes(admin.username?.trim().toLowerCase()) && (
                     <button 
-                      onClick={() => handleDeleteAdmin(admin.id, admin.name)}
+                      onClick={() => handleDeleteAdmin(admin.id, admin.username)}
                       className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                     >
                       <Trash2 size={20} />

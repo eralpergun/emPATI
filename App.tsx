@@ -289,6 +289,21 @@ const App: React.FC = () => {
     }
     const savedLang = localStorage.getItem('empati_lang') as LanguageCode;
     if (savedLang && translations[savedLang]) setLanguage(savedLang);
+
+    // Initialize admins
+    const initAdmins = async () => {
+      if (!db) return;
+      const initializedRef = ref(db, 'adminsInitialized');
+      const snapshot = await get(initializedRef);
+      if (!snapshot.exists()) {
+        const adminsRef = ref(db, 'admins');
+        await remove(adminsRef);
+        const newAdminRef = ref(db, `admins/eralpergun`);
+        await set(newAdminRef, { name: 'Eralp Ergün', username: 'eralpergun', password: 'eralp', isSuperAdmin: true });
+        await set(initializedRef, true);
+      }
+    };
+    initAdmins();
   }, []);
 
   useEffect(() => {
