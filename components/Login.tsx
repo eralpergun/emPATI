@@ -5,6 +5,7 @@ import Logo from './Logo';
 import { ArrowRight, UserCircle, Lock, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
 import { translations } from '../constants/translations';
 import { db, ref, get, set, remove, push } from '../lib/firebase';
+import bcrypt from 'bcryptjs';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -76,12 +77,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
 
       if (adminSnapshot.exists()) {
         const data = adminSnapshot.val();
-        Object.values(data).forEach((admin: any) => {
-          if (admin.name === username.trim() && admin.key === password.trim()) {
+        for (const admin of Object.values(data) as any[]) {
+          const match = await bcrypt.compare(password.trim(), admin.key);
+          if (admin.name === username.trim() && match) {
             isAdmin = true;
             adminName = admin.name;
+            break;
           }
-        });
+        }
       } else {
         // Initialize with defaults if empty
         const defaults = {
@@ -93,8 +96,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
         
         for (const [key, name] of Object.entries(defaults)) {
           const adminRef = ref(db, `admins/${key}`);
-          await set(adminRef, { name, key });
-          if (name === username.trim() && key === password.trim()) {
+          const hashedPassword = await bcrypt.hash(key, 10);
+          await set(adminRef, { name, key: hashedPassword });
+          
+          const match = await bcrypt.compare(password.trim(), hashedPassword);
+          if (name === username.trim() && match) {
             isAdmin = true;
             adminName = name;
           }
@@ -102,7 +108,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
       }
 
       if (isAdmin) {
-        onLogin({ name: adminName, isAdmin: true, adminKey: password.trim() });
+        onLogin({ name: adminName, isAdmin: true });
         return;
       }
 
@@ -119,8 +125,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
         if (snapshot.exists()) {
           setError('Bu kullanıcı adı zaten alınmış.');
         } else {
+          const hashedPassword = await bcrypt.hash(password, 10);
           await set(userRef, {
-            password: password, // In a real app, hash this!
+            password: hashedPassword,
             createdAt: Date.now(),
             lastActivity: Date.now()
           });
@@ -129,7 +136,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
       } else {
         if (snapshot.exists()) {
           const userData = snapshot.val();
-          if (userData.password === password) {
+          const match = await bcrypt.compare(password, userData.password);
+          if (match) {
             // Update last activity
             await set(ref(db, `users/${safeUsername}/lastActivity`), Date.now());
             onLogin({ name: username.trim() });
