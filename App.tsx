@@ -21,9 +21,22 @@ const App: React.FC = () => {
   const [markers, setMarkers] = useState<FoodMarker[]>([]);
   const [markerAddingEnabled, setMarkerAddingEnabled] = useState(true);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(() => {
+    const saved = localStorage.getItem('empati_last_location');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
   const [locationAccuracy, setLocationAccuracy] = useState<number>(Infinity);
-  const [locationStatus, setLocationStatus] = useState<LocationStatus>('searching');
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>(() => {
+    const savedStatus = localStorage.getItem('empati_location_status') as LocationStatus;
+    return savedStatus || 'searching';
+  });
   const [useHighAccuracy, setUseHighAccuracy] = useState(true);
   const [locationErrorCount, setLocationErrorCount] = useState(0);
   const [language, setLanguage] = useState<LanguageCode>('tr');
@@ -180,7 +193,10 @@ const App: React.FC = () => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
-        setUserLocation([latitude, longitude]);
+        const newLoc: [number, number] = [latitude, longitude];
+        localStorage.setItem('empati_last_location', JSON.stringify(newLoc));
+        localStorage.setItem('empati_location_status', accuracy < 100 ? 'precise' : 'approximate');
+        setUserLocation(newLoc);
         setLocationAccuracy(accuracy);
         setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
       },
@@ -188,8 +204,10 @@ const App: React.FC = () => {
         console.error("Manual location request error:", err);
         if (err.code === err.PERMISSION_DENIED) {
           setLocationStatus('denied');
+          localStorage.setItem('empati_location_status', 'denied');
         } else {
           setLocationStatus('error');
+          localStorage.setItem('empati_location_status', 'error');
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -229,11 +247,15 @@ const App: React.FC = () => {
         return;
       }
 
+      const newLoc: [number, number] = [latitude, longitude];
+      localStorage.setItem('empati_last_location', JSON.stringify(newLoc));
+      localStorage.setItem('empati_location_status', accuracy < 100 ? 'precise' : 'approximate');
+
       setUserLocation(prevLoc => {
         if (!prevLoc) {
           setLocationAccuracy(accuracy);
           setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
-          return [latitude, longitude];
+          return newLoc;
         }
 
         const dist = calculateDistance(latitude, longitude, prevLoc[0], prevLoc[1]);
@@ -247,7 +269,7 @@ const App: React.FC = () => {
           setLocationAccuracy(accuracy);
           setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
           lastUpdateRef.current = now;
-          return [latitude, longitude];
+          return newLoc;
         }
 
         return prevLoc;
@@ -264,6 +286,7 @@ const App: React.FC = () => {
 
       if (err.code === err.PERMISSION_DENIED) {
         setLocationStatus('denied');
+        localStorage.setItem('empati_location_status', 'denied');
       } else if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
         // If high accuracy fails, switch to low accuracy
         if (useHighAccuracy) {
@@ -271,6 +294,7 @@ const App: React.FC = () => {
           setUseHighAccuracy(false);
         } else if (locationStatus === 'searching') {
           setLocationStatus('error');
+          localStorage.setItem('empati_location_status', 'error');
         }
       }
     };
@@ -278,6 +302,26 @@ const App: React.FC = () => {
     // Continuous watching
     const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, geoOptions);
     
+    // Check permissions and request if needed
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((result) => {
+        if (result.state === 'prompt') {
+          requestLocationPermission();
+        }
+        result.onchange = () => {
+          if (result.state === 'granted') {
+            requestLocationPermission();
+          } else if (result.state === 'denied') {
+            setLocationStatus('denied');
+            localStorage.setItem('empati_location_status', 'denied');
+          }
+        };
+      });
+    } else if (locationStatus === 'denied' || locationStatus === 'error' || locationStatus === 'searching') {
+      // Fallback for browsers without Permissions API
+      requestLocationPermission();
+    }
+
     return () => navigator.geolocation.clearWatch(watchId);
   }, [useHighAccuracy]); // Re-run when accuracy mode changes
 
