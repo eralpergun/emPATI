@@ -110,7 +110,6 @@ const Settings: React.FC<SettingsProps> = ({
   
   useEffect(() => {
     if (isAdmin) {
-      setIsSuperAdmin(['eralpergun'].includes(userName?.trim().toLowerCase() || ''));
       fetchUsers();
       // Check if current admin is super admin
       const checkSuperAdmin = async () => {
@@ -122,12 +121,10 @@ const Settings: React.FC<SettingsProps> = ({
           const adminData = snapshot.val();
           const superAdmin = !!adminData.isSuperAdmin;
           setIsSuperAdmin(superAdmin);
-          if (superAdmin) {
-            fetchAdmins();
-          }
         }
       };
       checkSuperAdmin();
+      fetchAdmins();
     }
   }, [isAdmin, userName]);
 
@@ -144,6 +141,8 @@ const Settings: React.FC<SettingsProps> = ({
           ...details
         }));
         setAdmins(adminList);
+      } else {
+        setAdmins([]);
       }
     } catch (error) {
       console.error("Error fetching admins:", error);
@@ -180,11 +179,7 @@ const Settings: React.FC<SettingsProps> = ({
   };
 
   const handleDeleteAdmin = async (id: string, username: string) => {
-    // Super admins can delete anyone, except 'eralpergun'
-    if (!db || (username?.trim().toLowerCase() === 'eralpergun')) {
-      showAlert("Bilgi", "Bu yönetici silinemez.", 'info');
-      return;
-    }
+    if (!db) return;
 
     setModalConfig({
       isOpen: true,
@@ -427,7 +422,7 @@ const Settings: React.FC<SettingsProps> = ({
       )}
 
       {/* Super Admin Management */}
-      {isSuperAdmin && (
+      {isAdmin && (
         <div className="space-y-6 pt-8 border-t border-slate-100">
           <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex items-center justify-between">
             <div>
@@ -544,14 +539,12 @@ const Settings: React.FC<SettingsProps> = ({
                       </p>
                     </div>
                   </div>
-                  {!['eralpergun'].includes(admin.username?.trim().toLowerCase()) && (
-                    <button 
-                      onClick={() => handleDeleteAdmin(admin.id, admin.username)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => handleDeleteAdmin(admin.id, admin.username)}
+                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                  >
+                    <Trash2 size={20} />
+                  </button>
                 </div>
               ))
             ) : (

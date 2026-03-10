@@ -64,12 +64,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
       return;
     }
 
-    // Local admin check
-    if (username.trim().toLowerCase() === 'eralpergun' && password === 'eralp') {
-      onLogin({ name: 'eralpergun', isAdmin: true, isSuperAdmin: true });
-      return;
-    }
-
     // Sanitize username for Firebase key (no ., $, #, [, ], /)
     const safeUsername = username.trim().replace(/[.#$\[\]\/]/g, '_');
 
