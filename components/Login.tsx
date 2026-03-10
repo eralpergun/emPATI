@@ -88,7 +88,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
       } else {
         // Initialize with defaults if empty
         const admins = [
-          { name: 'Eralp Ergün', password: 'eralp' },
+          { name: 'eralpergun', password: 'eralp' },
           { name: 'Sabri Ahirzaman', password: 'sabri' },
           { name: 'Nehir Çatalbaş', password: 'nehir' },
           { name: 'Tibet Şahin', password: 'tibet' }
