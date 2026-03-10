@@ -5,6 +5,7 @@ import Logo from './Logo';
 import { ArrowRight, UserCircle, Lock, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
 import { translations } from '../constants/translations';
 import { db, ref, get, set, remove, push } from '../lib/firebase';
+import { hashPassword } from '../utils/hash';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -68,13 +69,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
     const safeUsername = username.trim().replace(/[.#$\[\]\/]/g, '_');
 
     try {
+      const hashedPassword = await hashPassword(password);
+
       // Check if it's an admin
       const adminRef = ref(db, `admins/${safeUsername}`);
       const adminSnapshot = await get(adminRef);
 
       if (adminSnapshot.exists()) {
         const adminData = adminSnapshot.val();
-        if (adminData.password === password) {
+        if (adminData.password === password || adminData.password === hashedPassword) {
           onLogin({ name: adminData.name, isAdmin: true, isSuperAdmin: !!adminData.isSuperAdmin });
           return;
         } else {
@@ -97,7 +100,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
           setError('Bu kullanıcı adı zaten alınmış.');
         } else {
           await set(userRef, {
-            password: password, // In a real app, hash this!
+            password: hashedPassword,
             createdAt: Date.now(),
             lastActivity: Date.now()
           });
@@ -106,7 +109,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
       } else {
         if (snapshot.exists()) {
           const userData = snapshot.val();
-          if (userData.password === password) {
+          if (userData.password === password || userData.password === hashedPassword) {
             // Update last activity
             await set(ref(db, `users/${safeUsername}/lastActivity`), Date.now());
             onLogin({ name: username.trim() });

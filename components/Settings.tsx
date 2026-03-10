@@ -6,6 +6,7 @@ import { Globe, Check, Trash2, Bell, Users, Search, Eye, EyeOff, ShieldAlert, Us
 import { translations } from '../constants/translations';
 import { db, ref, get, remove, update, push, set } from '../lib/firebase';
 import ConfirmModal from './ConfirmModal';
+import { hashPassword } from '../utils/hash';
 
 interface SettingsProps {
   currentLang: LanguageCode;
@@ -158,11 +159,12 @@ const Settings: React.FC<SettingsProps> = ({
     try {
       // Use username as key for admin
       const safeUsername = newAdminUsername.trim().replace(/[.#$\[\]\/]/g, '_');
+      const hashedPassword = await hashPassword(newAdminKey);
       const adminRef = ref(db, `admins/${safeUsername}`);
       await set(adminRef, {
         name: newAdminName,
         username: newAdminUsername,
-        password: newAdminKey,
+        password: hashedPassword,
         isSuperAdmin: newAdminIsSuper
       });
       setNewAdminName('');

@@ -595,18 +595,27 @@ const App: React.FC = () => {
 
   const handleDeleteAccount = async (username: string) => {
     if (!db) return;
-    try {
-      const safeUsername = username.trim().replace(/[.#$\[\]\/]/g, '_');
-      await remove(ref(db, `users/${safeUsername}`));
-      
-      if (user?.name === username) {
-        showAlert("Bilgi", "Hesabınız silindi.", 'info', handleLogout);
-      } else {
-        showAlert("Başarılı", "Hesap silindi.", 'success');
-      }
-    } catch (error) {
-      console.error("Account deletion error:", error);
-    }
+    
+    showConfirm(
+      "Hesabı Sil",
+      `"${username}" kullanıcısını silmek istediğinize emin misiniz?`,
+      async () => {
+        try {
+          const safeUsername = username.trim().replace(/[.#$\[\]\/]/g, '_');
+          await remove(ref(db, `users/${safeUsername}`));
+          
+          if (user?.name === username) {
+            showAlert("Bilgi", "Hesabınız silindi.", 'info', handleLogout);
+          } else {
+            showAlert("Başarılı", "Hesap silindi.", 'success');
+          }
+        } catch (error) {
+          console.error("Account deletion error:", error);
+          showAlert("Hata", "Hesap silinirken bir hata oluştu.", 'danger');
+        }
+      },
+      'danger'
+    );
   };
 
   return (
