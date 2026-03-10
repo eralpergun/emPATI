@@ -1,6 +1,7 @@
 
 export interface User {
   name: string;
+  username?: string;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
   adminKey?: string;
@@ -11,6 +12,7 @@ export interface FoodMarker {
   lat: number;
   lng: number;
   addedBy: string;
+  isSuperAdmin?: boolean;
   timestamp: number;
   type: 'cat' | 'dog' | 'both';
 }

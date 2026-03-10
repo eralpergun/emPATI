@@ -19,6 +19,7 @@ interface MapViewProps {
   currentLang: LanguageCode;
   isVisible?: boolean;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
   onDeleteMarker?: (id: string) => void;
   currentUserName?: string;
   showAlert: (title: string, message: string, type?: 'danger' | 'warning' | 'info' | 'success', onConfirm?: () => void) => void;
@@ -38,7 +39,7 @@ const SUBDOMAINS = ['mt0', 'mt1', 'mt2', 'mt3'];
 const CAT_PNG = "https://cdn-icons-png.flaticon.com/512/1864/1864514.png";
 const DOG_PNG = "https://cdn-icons-png.flaticon.com/512/1998/1998627.png";
 
-const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible, isAdmin, onDeleteMarker, currentUserName, showAlert, showConfirm, onRequestLocation }) => {
+const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccuracy, onAddMarker, onBack, currentLang, isVisible, isAdmin, isSuperAdmin, onDeleteMarker, currentUserName, showAlert, showConfirm, onRequestLocation }) => {
   const mapRef = useRef<L.Map>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [initialCenterDone, setInitialCenterDone] = useState(false);
@@ -432,6 +433,10 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
               expired: 'bg-slate-500 shadow-[0_0_10px_#64748b]'
             };
 
+            const canDelete = isSuperAdmin || 
+                             (isAdmin && !marker.isSuperAdminAdded) || 
+                             (marker.addedBy === currentUserName);
+
             return (
               <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={markerIcons[iconKey]}>
                 <Popup>
@@ -460,7 +465,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
                         <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{typeLabel}</span>
                       </div>
                     </div>
-                    {(isAdmin || marker.addedBy === currentUserName) && (
+                    {canDelete && (
                       <div className="mt-4 pt-4 border-t border-slate-100">
                         <button 
                           onClick={(e) => {

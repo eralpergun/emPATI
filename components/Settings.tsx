@@ -5,6 +5,7 @@ import Logo from './Logo';
 import { Globe, Check, Trash2, Bell, Users, Search, Eye, EyeOff, ShieldAlert, UserCircle } from 'lucide-react';
 import { translations } from '../constants/translations';
 import { db, ref, get, remove, update, push, set } from '../lib/firebase';
+import { hashPassword } from '../utils/hash';
 import ConfirmModal from './ConfirmModal';
 
 interface SettingsProps {
@@ -150,10 +151,11 @@ const Settings: React.FC<SettingsProps> = ({
       // Use username as key for admin
       const safeUsername = newAdminUsername.trim().replace(/[.#$\[\]\/]/g, '_');
       const adminRef = ref(db, `admins/${safeUsername}`);
+      const hashedPassword = await hashPassword(newAdminKey);
       await set(adminRef, {
         name: newAdminName,
         username: newAdminUsername,
-        password: newAdminKey,
+        password: hashedPassword,
         isSuperAdmin: newAdminIsSuper
       });
       setNewAdminName('');
@@ -171,6 +173,13 @@ const Settings: React.FC<SettingsProps> = ({
 
   const handleDeleteAdmin = async (id: string, username: string) => {
     if (!db) return;
+
+    // Find the admin to check if it's a super admin
+    const adminToDelete = admins.find(a => a.id === id);
+    if (adminToDelete?.isSuperAdmin) {
+      showAlert("Hata", "Süper yönetici hesabı silinemez.", 'danger');
+      return;
+    }
 
     setModalConfig({
       isOpen: true,

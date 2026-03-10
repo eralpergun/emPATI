@@ -77,7 +77,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
         const adminData = adminSnapshot.val();
         const isMatch = await comparePassword(password, adminData.password);
         if (isMatch || adminData.password === password) {
-          onLogin({ name: adminData.name, isAdmin: true, isSuperAdmin: !!adminData.isSuperAdmin });
+          onLogin({ 
+            name: adminData.name, 
+            username: adminData.username || safeUsername,
+            isAdmin: true, 
+            isSuperAdmin: !!adminData.isSuperAdmin 
+          });
           return;
         } else {
           setError('Hatalı şifre.');
@@ -104,7 +109,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
             createdAt: Date.now(),
             lastActivity: Date.now()
           });
-          onLogin({ name: username.trim() });
+          onLogin({ name: username.trim(), username: safeUsername });
         }
       } else {
         if (snapshot.exists()) {
@@ -113,7 +118,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
           if (isMatch || userData.password === password) {
             // Update last activity
             await set(ref(db, `users/${safeUsername}/lastActivity`), Date.now());
-            onLogin({ name: username.trim() });
+            onLogin({ name: username.trim(), username: safeUsername });
           } else {
             setError('Hatalı şifre.');
           }

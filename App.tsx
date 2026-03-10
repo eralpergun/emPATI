@@ -10,6 +10,7 @@ import { User, FoodMarker, LanguageCode, NotificationSetting } from './types';
 import { Cat, WifiOff, X } from 'lucide-react';
 import { translations } from './constants/translations';
 import { db, ref, push, get, remove, query, limitToLast, isConfigured, set, update, onValue } from './lib/firebase';
+import { hashPassword } from './utils/hash';
 import ConfirmModal from './components/ConfirmModal';
 
 type View = 'login' | 'menu' | 'map' | 'settings';
@@ -338,13 +339,19 @@ const App: React.FC = () => {
     // Initialize admins
     const initAdmins = async () => {
       if (!db) return;
+      
+      // Clear legacy ban data as requested
+      const bansRef = ref(db, 'bans');
+      remove(bansRef).catch(() => {});
+
       const initializedRef = ref(db, 'adminsInitialized');
       const snapshot = await get(initializedRef);
       if (!snapshot.exists()) {
         const adminsRef = ref(db, 'admins');
         await remove(adminsRef);
         const newAdminRef = ref(db, `admins/eralpergun`);
-        await set(newAdminRef, { name: 'Eralp Ergün', username: 'eralpergun', password: 'eralp', isSuperAdmin: true });
+        const hashedPassword = await hashPassword('eralp');
+        await set(newAdminRef, { name: 'Eralp Ergün', username: 'eralpergun', password: hashedPassword, isSuperAdmin: true });
         await set(initializedRef, true);
       }
     };
@@ -482,20 +489,20 @@ const App: React.FC = () => {
 
   // Check for account deletion in real-time
   useEffect(() => {
-    if (!isConfigured || !db || !user || user.name === '@@ANONYMOUS@@' || user.isAdmin) return;
+    if (!isConfigured || !db || !user || user.name === '@@ANONYMOUS@@') return;
 
-    const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
+    const safeUsername = (user.username || user.name).trim().replace(/[.#$\[\]\/]/g, '_');
     const userRef = ref(db, `users/${safeUsername}`);
     const adminRef = ref(db, `admins/${safeUsername}`);
     
     const unsubscribeUser = onValue(userRef, (snapshot) => {
-      if (!snapshot.exists() && !user.isAdmin) {
+      if (!user.isAdmin && user.username && !snapshot.exists()) {
         showAlert("Bilgi", "Hesabınız silindi.", 'info', handleLogout);
       }
     });
 
     const unsubscribeAdmin = onValue(adminRef, (snapshot) => {
-      if (!snapshot.exists() && user.isAdmin) {
+      if (user.isAdmin && user.username && !snapshot.exists()) {
         showAlert("Bilgi", "Yönetici hesabınız silindi.", 'info', handleLogout);
       }
     });
@@ -553,6 +560,7 @@ const App: React.FC = () => {
         lat,
         lng,
         addedBy: user.name,
+        isSuperAdmin: !!user.isSuperAdmin,
         timestamp: Date.now(),
         type: type 
       };
@@ -641,8 +649,17 @@ const App: React.FC = () => {
     const markerToDelete = markers.find(m => m.id === id);
     if (!markerToDelete) return;
 
-    // Allow if admin OR if the user is the owner
-    if (!user.isAdmin && markerToDelete.addedBy !== user.name) {
+    // Allow if super admin
+    // OR if normal admin AND marker is not from a super admin
+    // OR if the user is the owner
+    if (user.isSuperAdmin) {
+      // Super admin can delete anything
+    } else if (user.isAdmin) {
+      if (markerToDelete.isSuperAdmin) {
+        showAlert("Hata", "Süper yöneticilerin mamasını silme yetkiniz yok.", 'danger');
+        return;
+      }
+    } else if (markerToDelete.addedBy !== user.name) {
       showAlert("Hata", "Bu mamayı silme yetkiniz yok.", 'danger');
       return;
     }
@@ -681,6 +698,14 @@ const App: React.FC = () => {
           
           const userSnap = await get(userRef);
           const adminSnap = await get(adminRef);
+
+          if (adminSnap.exists()) {
+            const adminData = adminSnap.val();
+            if (adminData.isSuperAdmin) {
+              showAlert("Hata", "Süper yönetici hesabı silinemez.", 'danger');
+              return;
+            }
+          }
 
           if (userSnap.exists()) {
             await remove(userRef);
