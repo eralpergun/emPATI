@@ -17,8 +17,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [mode, setMode] = useState<'login' | 'register' | 'admin'>('login');
-  const [adminPassword, setAdminPassword] = useState('');
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const t = translations[currentLang];
@@ -48,51 +47,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
     cleanupInactiveUsers();
   }, []);
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const adminsRef = ref(db, 'admins');
-      const snapshot = await get(adminsRef);
-      
-      let adminList: Record<string, string> = {};
-      
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        Object.values(data).forEach((admin: any) => {
-          adminList[admin.key] = admin.name;
-        });
-      } else {
-        // Initialize with defaults if empty
-        const defaults = {
-          'eralp': 'Eralp Ergün',
-          'sabri': 'Sabri Ahirzaman',
-          'nehir': 'Nehir Çatalbaş',
-          'tibet': 'Tibet Şahin'
-        };
-        
-        for (const [key, name] of Object.entries(defaults)) {
-          const adminRef = ref(db, `admins/${key}`);
-          await set(adminRef, { name, key });
-        }
-        adminList = defaults;
-      }
-
-      if (adminList[adminPassword]) {
-        onLogin({ name: adminList[adminPassword], isAdmin: true, adminKey: adminPassword });
-      } else {
-        setError('Hatalı şifre!');
-      }
-    } catch (err) {
-      console.error("Admin login error:", err);
-      setError('Bir hata oluştu.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleUserAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -114,6 +68,45 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
     const safeUsername = username.trim().replace(/[.#$\[\]\/]/g, '_');
 
     try {
+      // 1. Check if it's an admin login
+      const adminsRef = ref(db, 'admins');
+      const adminSnapshot = await get(adminsRef);
+      let isAdmin = false;
+      let adminName = '';
+
+      if (adminSnapshot.exists()) {
+        const data = adminSnapshot.val();
+        Object.values(data).forEach((admin: any) => {
+          if (admin.name === username.trim() && admin.key === password.trim()) {
+            isAdmin = true;
+            adminName = admin.name;
+          }
+        });
+      } else {
+        // Initialize with defaults if empty
+        const defaults = {
+          'eralp': 'Eralp Ergün',
+          'sabri': 'Sabri Ahirzaman',
+          'nehir': 'Nehir Çatalbaş',
+          'tibet': 'Tibet Şahin'
+        };
+        
+        for (const [key, name] of Object.entries(defaults)) {
+          const adminRef = ref(db, `admins/${key}`);
+          await set(adminRef, { name, key });
+          if (name === username.trim() && key === password.trim()) {
+            isAdmin = true;
+            adminName = name;
+          }
+        }
+      }
+
+      if (isAdmin) {
+        onLogin({ name: adminName, isAdmin: true, adminKey: password.trim() });
+        return;
+      }
+
+      // 2. Normal user login
       const userRef = ref(db, `users/${safeUsername}`);
       const snapshot = await get(userRef);
 
@@ -169,7 +162,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
           <h1 className="text-4xl sm:text-5xl font-black text-slate-900 mb-1 tracking-tighter">emPATİ</h1>
           <p className="text-orange-600 font-black text-[10px] sm:text-sm uppercase tracking-[0.2em] mb-2 sm:mb-4">İyiliği Haritaya İşle!</p>
           <p className="text-slate-500 text-base sm:text-lg font-medium">
-            {mode === 'admin' ? 'Yönetici Girişi' : (mode === 'register' ? 'Hesap Oluştur' : t.loginTitle)}
+            {mode === 'register' ? 'Hesap Oluştur' : t.loginTitle}
           </p>
         </div>
 
@@ -179,33 +172,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
               Hesap oluşturma kapalıdır.
             </div>
           )}
-          {mode === 'admin' ? (
-            <form onSubmit={handleAdminLogin} className="space-y-4">
-              <div>
-                <input
-                  type="password"
-                  required
-                  value={adminPassword}
-                  onChange={(e) => {
-                    setAdminPassword(e.target.value);
-                    setError('');
-                  }}
-                  placeholder="Yönetici Şifresi"
-                  className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold"
-                />
-                {error && <p className="text-red-500 text-sm mt-2 ml-2 font-bold">{error}</p>}
-              </div>
-              <button
-                type="submit"
-                disabled={!adminPassword}
-                className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-4 sm:py-5 rounded-[1.5rem] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 group text-lg"
-              >
-                Giriş Yap
-                <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleUserAuth} className="space-y-4">
+          <form onSubmit={handleUserAuth} className="space-y-4">
               <div>
                 <div className="relative mb-4">
                   <input
@@ -260,74 +227,45 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
                 <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </form>
-          )}
 
           <div className="space-y-3 pt-2 border-t border-slate-100">
-            {mode !== 'admin' && (
-              <>
-                {registrationEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode(mode === 'login' ? 'register' : 'login');
-                      setError('');
-                      setUsername('');
-                      setPassword('');
-                      setConfirmPassword('');
-                      setShowPassword(false);
-                    }}
-                    className="w-full text-slate-600 hover:text-slate-900 font-bold py-3 transition-colors flex items-center justify-center gap-2"
-                  >
-                    {mode === 'login' ? (
-                      <>
-                        <UserPlus size={18} />
-                        Hesap Oluştur
-                      </>
-                    ) : (
-                      <>
-                        <LogIn size={18} />
-                        Giriş Yap
-                      </>
-                    )}
-                  </button>
+            {registrationEnabled && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === 'login' ? 'register' : 'login');
+                  setError('');
+                  setUsername('');
+                  setPassword('');
+                  setConfirmPassword('');
+                  setShowPassword(false);
+                }}
+                className="w-full text-slate-600 hover:text-slate-900 font-bold py-3 transition-colors flex items-center justify-center gap-2"
+              >
+                {mode === 'login' ? (
+                  <>
+                    <UserPlus size={18} />
+                    Hesap Oluştur
+                  </>
+                ) : (
+                  <>
+                    <LogIn size={18} />
+                    Giriş Yap
+                  </>
                 )}
-                
-                {mode === 'login' && registrationEnabled && (
-                  <button
-                    type="button"
-                    onClick={handleAnonymous}
-                    className="w-full bg-white hover:bg-slate-50 text-slate-400 border-2 border-slate-100 font-bold py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-3 group text-sm"
-                  >
-                    <UserCircle size={20} className="text-slate-300 group-hover:text-slate-500" />
-                    {t.anonBtn}
-                  </button>
-                )}
-              </>
+              </button>
             )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setMode(mode === 'admin' ? 'login' : 'admin');
-                setError('');
-                setAdminPassword('');
-                setUsername('');
-                setPassword('');
-              }}
-              className="w-full text-slate-400 hover:text-slate-600 text-xs font-bold py-2 transition-colors flex items-center justify-center gap-2"
-            >
-              {mode === 'admin' ? (
-                <>
-                  <UserCircle size={14} />
-                  Kullanıcı Girişine Dön
-                </>
-              ) : (
-                <>
-                  <Lock size={14} />
-                  Yönetici Girişi
-                </>
-              )}
-            </button>
+            
+            {mode === 'login' && registrationEnabled && (
+              <button
+                type="button"
+                onClick={handleAnonymous}
+                className="w-full bg-white hover:bg-slate-50 text-slate-400 border-2 border-slate-100 font-bold py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-3 group text-sm"
+              >
+                <UserCircle size={20} className="text-slate-300 group-hover:text-slate-500" />
+                {t.anonBtn}
+              </button>
+            )}
           </div>
         </div>
       </div>
