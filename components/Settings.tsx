@@ -16,6 +16,7 @@ interface SettingsProps {
   onDeleteAccount: (username: string) => void;
   isAnonymous: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   userName: string;
   onLoginAsUser: (username: string) => void;
   markerAddingEnabled: boolean;
@@ -65,6 +66,7 @@ const Settings: React.FC<SettingsProps> = ({
   onDeleteAccount,
   isAnonymous,
   isAdmin,
+  isSuperAdmin,
   userName,
   onLoginAsUser,
   markerAddingEnabled,
@@ -110,24 +112,9 @@ const Settings: React.FC<SettingsProps> = ({
   const [newAdminIsSuper, setNewAdminIsSuper] = useState(false);
   const [showAdminForm, setShowAdminForm] = useState(false);
   
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  
   useEffect(() => {
     if (isAdmin) {
       fetchUsers();
-      // Check if current admin is super admin
-      const checkSuperAdmin = async () => {
-        if (!db) return;
-        const safeUsername = userName.trim().replace(/[.#$\[\]\/]/g, '_');
-        const adminRef = ref(db, `admins/${safeUsername}`);
-        const snapshot = await get(adminRef);
-        if (snapshot.exists()) {
-          const adminData = snapshot.val();
-          const superAdmin = !!adminData.isSuperAdmin;
-          setIsSuperAdmin(superAdmin);
-        }
-      };
-      checkSuperAdmin();
       fetchAdmins();
     }
   }, [isAdmin, userName]);
@@ -426,7 +413,7 @@ const Settings: React.FC<SettingsProps> = ({
       )}
 
       {/* Super Admin Management */}
-      {isAdmin && (
+      {isSuperAdmin && (
         <div className="space-y-6 pt-8 border-t border-slate-100">
           <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex items-center justify-between">
             <div>

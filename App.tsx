@@ -517,7 +517,7 @@ const App: React.FC = () => {
   };
 
   const handleToggleMarkerAdding = async (enabled: boolean) => {
-    if (!db || !user?.isAdmin) return;
+    if (!db || !user?.isSuperAdmin) return;
     try {
       await set(ref(db, 'settings/markerAddingEnabled'), enabled);
     } catch (error) {
@@ -526,7 +526,7 @@ const App: React.FC = () => {
   };
 
   const handleToggleAdminMarkerAdding = async (enabled: boolean) => {
-    if (!db || !user?.isAdmin) return;
+    if (!db || !user?.isSuperAdmin) return;
     try {
       await set(ref(db, 'settings/adminMarkerAddingEnabled'), enabled);
     } catch (error) {
@@ -535,7 +535,7 @@ const App: React.FC = () => {
   };
 
   const handleToggleRegistration = async (enabled: boolean) => {
-    if (!db || !user?.isAdmin) return;
+    if (!db || !user?.isSuperAdmin) return;
     try {
       await set(ref(db, 'settings/registrationEnabled'), enabled);
     } catch (error) {
@@ -601,17 +601,9 @@ const App: React.FC = () => {
       return;
     }
 
-    if (user.isAdmin && !adminMarkerAddingEnabled) {
-      // Check if current user is super admin
-      const safeUsername = user.name.trim().replace(/[.#$\[\]\/]/g, '_');
-      const adminRef = ref(db, `admins/${safeUsername}`);
-      const snapshot = await get(adminRef);
-      const isAdminSuper = snapshot.exists() && !!snapshot.val().isSuperAdmin;
-
-      if (!isAdminSuper) {
-        showAlert("Bilgi", "Yöneticiler için mama ekleme şu an kapalıdır.", 'info');
-        return;
-      }
+    if (user.isAdmin && !adminMarkerAddingEnabled && !user.isSuperAdmin) {
+      showAlert("Bilgi", "Yöneticiler için mama ekleme şu an kapalıdır.", 'info');
+      return;
     }
     
     const now = Date.now();
@@ -630,7 +622,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteAllMarkers = async () => {
-    if (!isConfigured || !db || !user?.isAdmin) return;
+    if (!isConfigured || !db || !user?.isSuperAdmin) return;
 
     try {
       const markersRef = ref(db, 'markers');
@@ -746,6 +738,7 @@ const App: React.FC = () => {
                 userName={resolveName(user?.name || '')} 
                 currentLang={language} 
                 isAdmin={user?.isAdmin}
+                isSuperAdmin={user?.isSuperAdmin}
                 onDeleteAll={handleDeleteAllMarkers}
                 showAlert={showAlert}
                 showConfirm={showConfirm}
@@ -762,6 +755,7 @@ const App: React.FC = () => {
                 onDeleteAccount={handleDeleteAccount}
                 isAnonymous={user?.name === '@@ANONYMOUS@@'}
                 isAdmin={!!user?.isAdmin}
+                isSuperAdmin={!!user?.isSuperAdmin}
                 userName={user?.name || ''}
                 onLoginAsUser={handleLoginAsUser}
                 markerAddingEnabled={markerAddingEnabled}

@@ -22,6 +22,7 @@ interface MenuProps {
   userName: string;
   currentLang: LanguageCode;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
   onDeleteAll?: () => void;
   showAlert: (title: string, message: string, type?: 'danger' | 'warning' | 'info' | 'success', onConfirm?: () => void) => void;
   showConfirm: (title: string, message: string, onConfirm: () => void, type?: 'danger' | 'warning' | 'info') => void;
@@ -32,7 +33,7 @@ const locales: Record<LanguageCode, any> = {
   tr, en: enUS, it, fr, de, es, pt, ru, jp: ja, ar: arSA
 };
 
-const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, userName, currentLang, isAdmin, onDeleteAll, showAlert, showConfirm, onRequestLocation }) => {
+const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, userName, currentLang, isAdmin, isSuperAdmin, onDeleteAll, showAlert, showConfirm, onRequestLocation }) => {
   const t = translations[currentLang];
   const locale = locales[currentLang] || tr;
 
@@ -59,7 +60,7 @@ const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, 
         </div>
       </div>
 
-      {isAdmin && (
+      {isSuperAdmin && (
         <button 
           onClick={() => {
             showConfirm(
