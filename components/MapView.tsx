@@ -228,7 +228,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   return (
     <div className="w-full h-full relative bg-[#f1f5f9]">
       <style>{`
-        .custom-marker { background: none !important; border: none !important; box-shadow: none !important; contain: content; overflow: visible !important; }
+        .custom-marker { background: none !important; border: none !important; box-shadow: none !important; overflow: visible !important; }
         .marker-container { position: relative; display: flex; align-items: center; justify-content: center; will-change: transform; transform: translate3d(0,0,0); }
         
         @keyframes marker-pulse {
@@ -246,6 +246,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
           position: absolute;
           width: 48px;
           height: 48px;
+          border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
