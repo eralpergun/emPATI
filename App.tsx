@@ -741,7 +741,7 @@ const App: React.FC = () => {
           <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 py-4 px-6 flex justify-between items-center z-[3000] shadow-sm">
             <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setView('menu')}>
               <Logo size={48} />
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">emPATİ</h1>
+              <h1 className="text-xl font-black text-[#654e96] tracking-tight">emPATİ</h1>
             </div>
             <div className="flex items-center gap-4">
               {!isConfigured && (

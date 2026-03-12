@@ -145,7 +145,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
           <div className="inline-flex items-center justify-center w-28 h-28 sm:w-32 sm:h-32 bg-white rounded-[2rem] sm:rounded-[2.5rem] mb-4 sm:mb-6 shadow-2xl shadow-orange-100 animate-bounce-slow overflow-hidden p-4">
             <Logo size="100%" />
           </div>
-          <h1 className="text-4xl sm:text-5xl font-black text-slate-900 mb-1 tracking-tighter">emPATİ</h1>
+          <h1 className="text-4xl sm:text-5xl font-black text-[#654e96] mb-1 tracking-tighter">emPATİ</h1>
           <p className="text-orange-600 font-black text-[10px] sm:text-sm uppercase tracking-[0.2em] mb-2 sm:mb-4">İyiliği Haritaya İşle!</p>
           <p className="text-slate-500 text-base sm:text-lg font-medium">
             {mode === 'register' ? 'Hesap Oluştur' : t.loginTitle}
