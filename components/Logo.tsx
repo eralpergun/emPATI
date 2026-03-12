@@ -7,7 +7,7 @@ interface LogoProps {
 }
 
 const Logo: React.FC<LogoProps> = ({ className = '', size = 120 }) => {
-  const logoUrl = "https://images.unsplash.com/vector-1772783545677-5d4d958947f5?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwcm9maWxlLXBhZ2V8MXx8fGVufDB8fHx8fA%3D%3D";
+  const logoUrl = "https://images.unsplash.com/vector-1773298110594-c3b55a8db8ca?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwcm9maWxlLXBhZ2V8MXx8fGVufDB8fHx8fA%3D%3D";
 
   return (
     <div 
