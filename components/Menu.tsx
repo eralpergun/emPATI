@@ -64,8 +64,8 @@ const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, 
         <button 
           onClick={() => {
             showConfirm(
-              'Delete All Food',
-              'Are you sure you want to delete all food spots? This action cannot be undone!',
+              'Tüm Mamaları Sil',
+              'Tüm mama noktalarını silmek istediğinize emin misiniz? Bu işlem geri alınamaz!',
               () => onDeleteAll?.(),
               'danger'
             );
@@ -73,7 +73,7 @@ const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, 
           className="w-full bg-red-500 p-5 rounded-[2rem] text-white flex items-center justify-center gap-3 hover:bg-red-600 transition-colors shadow-xl shadow-red-200"
         >
           <Trash2 size={24} />
-          <span className="font-black text-lg">Delete All Food</span>
+          <span className="font-black text-lg">Tüm Mamaları Sil</span>
         </button>
       )}
 

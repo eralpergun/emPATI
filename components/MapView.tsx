@@ -203,7 +203,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         </div>
         <div className="text-center space-y-2">
           <p className="font-black text-slate-800 tracking-tight text-lg">{t.locSearching}</p>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{t.locDesc || "Waiting for GPS Signal..."}</p>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{t.locDesc || "GPS Sinyali Bekleniyor..."}</p>
         </div>
         <div className="flex flex-col gap-3 w-full max-w-[200px]">
           <button 
@@ -211,12 +211,12 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
             className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white shadow-xl shadow-blue-200 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all active:scale-95"
           >
             <Navigation2 size={18} fill="currentColor" />
-            {t.retryLocation || "Retry Location"}
+            {t.retryLocation || "Konumu Yenile"}
           </button>
           
           <div className={`transition-all duration-500 ${showSkipButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
             <button onClick={() => setForceOpen(true)} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 shadow-lg rounded-2xl text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors">
-              {t.openMapAnyway || "Open Map Anyway"}
+              {t.openMapAnyway || "Haritayı Yine de Aç"}
               <ArrowRight size={16} />
             </button>
           </div>
@@ -332,13 +332,13 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[2000] flex flex-col items-center gap-2">
           <div className="bg-red-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-bounce-slow">
             <AlertCircle size={16} />
-            <span className="text-xs font-bold">{t.locNotActive || "Location not active"}</span>
+            <span className="text-xs font-bold">{t.locNotActive || "Konum etkin değil"}</span>
           </div>
           <button 
             onClick={onRequestLocation}
             className="bg-white/90 backdrop-blur-md text-blue-600 px-4 py-2 rounded-full shadow-lg text-[10px] font-black uppercase tracking-wider border border-blue-100 active:scale-95"
           >
-            {t.retryLocation || "Retry Location"}
+            {t.retryLocation || "Konumu Yenile"}
           </button>
         </div>
       )}
