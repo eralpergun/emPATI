@@ -45,7 +45,20 @@ const App: React.FC = () => {
 
   // Fetch IP-based location as a fallback removed because it often returns incorrect locations (e.g. Ireland)
   useEffect(() => {
-    // Rely on browser geolocation only
+    // Clear Dublin-like coordinates from localStorage if they exist (persistent error fix)
+    const saved = localStorage.getItem('empati_last_location');
+    if (saved) {
+      try {
+        const [lat, lon] = JSON.parse(saved);
+        // Dublin is roughly [53.3, -6.2]. If it's very close, clear it.
+        if (Math.abs(lat - 53.3498) < 0.1 && Math.abs(lon - (-6.2603)) < 0.1) {
+          localStorage.removeItem('empati_last_location');
+          localStorage.removeItem('empati_location_status');
+          setUserLocation(null);
+          userLocationRef.current = null;
+        }
+      } catch (e) {}
+    }
   }, []);
   const [useHighAccuracy, setUseHighAccuracy] = useState(true);
   const [locationErrorCount, setLocationErrorCount] = useState(0);
@@ -206,6 +219,13 @@ const App: React.FC = () => {
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
         if (latitude === 0 && longitude === 0) return;
+
+        // Ignore Dublin-like coordinates (false positives in cloud environments)
+        const isDublin = Math.abs(latitude - 53.3498) < 0.01 && Math.abs(longitude - (-6.2603)) < 0.01;
+        if (isDublin) {
+          setLocationStatus('error');
+          return;
+        }
         
         const newLoc: [number, number] = [latitude, longitude];
         localStorage.setItem('empati_last_location', JSON.stringify(newLoc));
@@ -261,6 +281,12 @@ const App: React.FC = () => {
       
       // Ignore extremely poor accuracy (over 20km for PCs/Mobile) or Null Island (0,0)
       if (accuracy > 20000 || (latitude === 0 && longitude === 0)) {
+        return;
+      }
+
+      // Ignore Dublin-like coordinates if they are likely false positives (common in cloud environments)
+      const isDublin = Math.abs(latitude - 53.3498) < 0.01 && Math.abs(longitude - (-6.2603)) < 0.01;
+      if (isDublin) {
         return;
       }
 
