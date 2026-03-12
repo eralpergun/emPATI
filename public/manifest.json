@@ -8,13 +8,13 @@
   "theme_color": "#EF3E36",
   "icons": [
     {
-      "src": "https://images.unsplash.com/vector-1772783545677-5d4d958947f5?w=192&h=192&auto=format&fit=crop&q=80",
+      "src": "https://images.unsplash.com/vector-1773298110594-c3b55a8db8ca?w=192&h=192&auto=format&fit=crop&q=80",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://images.unsplash.com/vector-1772783545677-5d4d958947f5?w=512&h=512&auto=format&fit=crop&q=80",
+      "src": "https://images.unsplash.com/vector-1773298110594-c3b55a8db8ca?w=512&h=512&auto=format&fit=crop&q=80",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
