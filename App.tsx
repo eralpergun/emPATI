@@ -43,23 +43,9 @@ const App: React.FC = () => {
     return savedStatus || 'searching';
   });
 
-  // Fetch IP-based location as a fallback
+  // Fetch IP-based location as a fallback removed because it often returns incorrect locations (e.g. Ireland)
   useEffect(() => {
-    if (!userLocation) {
-      fetch('https://ipapi.co/json/')
-        .then(res => res.json())
-        .then(data => {
-          if (data.latitude && data.longitude && !userLocationRef.current) {
-            const ipLoc: [number, number] = [data.latitude, data.longitude];
-            setUserLocation(ipLoc);
-            userLocationRef.current = ipLoc;
-            setLocationStatus('approximate');
-            setLocationAccuracy(50000); // 50km accuracy for IP
-            locationAccuracyRef.current = 50000;
-          }
-        })
-        .catch(err => console.error("IP geolocation fallback failed:", err));
-    }
+    // Rely on browser geolocation only
   }, []);
   const [useHighAccuracy, setUseHighAccuracy] = useState(true);
   const [locationErrorCount, setLocationErrorCount] = useState(0);
@@ -332,21 +318,9 @@ const App: React.FC = () => {
         }
       }
 
-      // Fallback to IP geolocation if we don't have a location yet
+      // Fallback to IP geolocation removed as it is unreliable
       if (!userLocationRef.current) {
-        fetch('https://ipapi.co/json/')
-          .then(res => res.json())
-          .then(data => {
-            if (data.latitude && data.longitude && !userLocationRef.current) {
-              const ipLoc: [number, number] = [data.latitude, data.longitude];
-              setUserLocation(ipLoc);
-              userLocationRef.current = ipLoc;
-              setLocationStatus('approximate');
-              setLocationAccuracy(50000);
-              locationAccuracyRef.current = 50000;
-            }
-          })
-          .catch(err => console.error("IP geolocation fallback failed:", err));
+        // Stay at default position (Istanbul) if GPS fails
       }
     };
 
