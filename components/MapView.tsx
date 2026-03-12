@@ -233,13 +233,13 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
         
         @keyframes marker-pulse {
           0% { transform: scale(0.9); opacity: 0.8; }
-          50% { transform: scale(1.5); opacity: 0.4; }
+          50% { transform: scale(1.2); opacity: 0.4; }
           100% { transform: scale(0.9); opacity: 0.8; }
         }
 
         @keyframes ring-expand {
           0% { transform: scale(0.5); opacity: 0.8; border-width: 4px; }
-          100% { transform: scale(2.5); opacity: 0; border-width: 1px; }
+          100% { transform: scale(1.6); opacity: 0; border-width: 1px; }
         }
 
         .marker-rings {
