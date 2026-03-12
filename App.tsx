@@ -23,7 +23,7 @@ const App: React.FC = () => {
   const [markerAddingEnabled, setMarkerAddingEnabled] = useState(true);
   const [adminMarkerAddingEnabled, setAdminMarkerAddingEnabled] = useState(true);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(() => {
+  const getInitialLocation = (): [number, number] | null => {
     const saved = localStorage.getItem('empati_last_location');
     if (saved) {
       try {
@@ -33,12 +33,34 @@ const App: React.FC = () => {
       }
     }
     return null;
-  });
+  };
+
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(getInitialLocation);
+  const userLocationRef = useRef<[number, number] | null>(getInitialLocation());
   const [locationAccuracy, setLocationAccuracy] = useState<number>(Infinity);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>(() => {
     const savedStatus = localStorage.getItem('empati_location_status') as LocationStatus;
     return savedStatus || 'searching';
   });
+
+  // Fetch IP-based location as a fallback
+  useEffect(() => {
+    if (!userLocation) {
+      fetch('https://ipapi.co/json/')
+        .then(res => res.json())
+        .then(data => {
+          if (data.latitude && data.longitude && !userLocationRef.current) {
+            const ipLoc: [number, number] = [data.latitude, data.longitude];
+            setUserLocation(ipLoc);
+            userLocationRef.current = ipLoc;
+            setLocationStatus('approximate');
+            setLocationAccuracy(50000); // 50km accuracy for IP
+            locationAccuracyRef.current = 50000;
+          }
+        })
+        .catch(err => console.error("IP geolocation fallback failed:", err));
+    }
+  }, []);
   const [useHighAccuracy, setUseHighAccuracy] = useState(true);
   const [locationErrorCount, setLocationErrorCount] = useState(0);
   const [language, setLanguage] = useState<LanguageCode>('tr');
@@ -47,6 +69,7 @@ const App: React.FC = () => {
   });
   const [notifications, setNotifications] = useState<{id: string, type: string}[]>([]);
   const notifiedMarkersRef = useRef<Set<string>>(new Set());
+  const locationAccuracyRef = useRef<number>(Infinity);
 
   const [showLanguagePrompt, setShowLanguagePrompt] = useState(false);
   const [suggestedLang, setSuggestedLang] = useState<LanguageCode | null>(null);
@@ -192,15 +215,21 @@ const App: React.FC = () => {
     }
 
     setLocationStatus('searching');
+    setUseHighAccuracy(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
+        if (latitude === 0 && longitude === 0) return;
+        
         const newLoc: [number, number] = [latitude, longitude];
         localStorage.setItem('empati_last_location', JSON.stringify(newLoc));
         localStorage.setItem('empati_location_status', accuracy < 100 ? 'precise' : 'approximate');
         setUserLocation(newLoc);
         setLocationAccuracy(accuracy);
+        locationAccuracyRef.current = accuracy;
+        userLocationRef.current = newLoc;
         setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
+        lastUpdateRef.current = Date.now();
       },
       (err) => {
         console.error("Manual location request error:", err);
@@ -212,7 +241,7 @@ const App: React.FC = () => {
           localStorage.setItem('empati_location_status', 'error');
         }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
@@ -237,15 +266,15 @@ const App: React.FC = () => {
 
     const geoOptions: PositionOptions = {
       enableHighAccuracy: useHighAccuracy,
-      timeout: 30000, 
-      maximumAge: 5000 
+      timeout: 15000, 
+      maximumAge: 10000 
     };
 
     const handleSuccess = (pos: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = pos.coords;
       
-      // Ignore extremely poor accuracy (over 10km for PCs/Mobile)
-      if (accuracy > 10000) {
+      // Ignore extremely poor accuracy (over 20km for PCs/Mobile) or Null Island (0,0)
+      if (accuracy > 20000 || (latitude === 0 && longitude === 0)) {
         return;
       }
 
@@ -253,29 +282,36 @@ const App: React.FC = () => {
       localStorage.setItem('empati_last_location', JSON.stringify(newLoc));
       localStorage.setItem('empati_location_status', accuracy < 100 ? 'precise' : 'approximate');
 
-      setUserLocation(prevLoc => {
-        if (!prevLoc) {
-          setLocationAccuracy(accuracy);
-          setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
-          return newLoc;
-        }
+      const prevLoc = userLocationRef.current;
+      const prevAccuracy = locationAccuracyRef.current;
 
-        const dist = calculateDistance(latitude, longitude, prevLoc[0], prevLoc[1]);
-        const now = Date.now();
-        
-        // Update if:
-        // 1. Accuracy is significantly better (10% improvement)
-        // 2. User moved more than 5 meters
-        // 3. It's been more than 5 seconds since last update
-        if (accuracy < locationAccuracy * 0.9 || dist > 5 || (now - lastUpdateRef.current > 5000)) {
-          setLocationAccuracy(accuracy);
-          setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
-          lastUpdateRef.current = now;
-          return newLoc;
-        }
+      if (!prevLoc) {
+        setLocationAccuracy(accuracy);
+        locationAccuracyRef.current = accuracy;
+        userLocationRef.current = newLoc;
+        setUserLocation(newLoc);
+        setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
+        lastUpdateRef.current = Date.now();
+        return;
+      }
 
-        return prevLoc;
-      });
+      const dist = calculateDistance(latitude, longitude, prevLoc[0], prevLoc[1]);
+      const now = Date.now();
+      
+      const isBetterAccuracy = accuracy < prevAccuracy * 0.9;
+      const isAcceptableAccuracy = accuracy <= prevAccuracy * 2 || accuracy < 100;
+      const movedSignificantly = dist > 5 && isAcceptableAccuracy;
+      const timePassed = (now - lastUpdateRef.current > 5000) && isAcceptableAccuracy;
+      const longTimePassed = now - lastUpdateRef.current > 60000;
+
+      if (isBetterAccuracy || movedSignificantly || timePassed || longTimePassed) {
+        setLocationAccuracy(accuracy);
+        locationAccuracyRef.current = accuracy;
+        userLocationRef.current = newLoc;
+        setUserLocation(newLoc);
+        setLocationStatus(accuracy < 100 ? 'precise' : 'approximate');
+        lastUpdateRef.current = now;
+      }
     };
 
     const handleError = (err: GeolocationPositionError) => {
@@ -290,14 +326,27 @@ const App: React.FC = () => {
         setLocationStatus('denied');
         localStorage.setItem('empati_location_status', 'denied');
       } else if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
-        // If high accuracy fails, switch to low accuracy
-        if (useHighAccuracy) {
-          console.log("Switching to low accuracy location mode...");
-          setUseHighAccuracy(false);
-        } else if (locationStatus === 'searching') {
-          setLocationStatus('error');
+        setLocationStatus(prev => prev === 'searching' ? 'error' : prev);
+        if (localStorage.getItem('empati_location_status') === 'searching') {
           localStorage.setItem('empati_location_status', 'error');
         }
+      }
+
+      // Fallback to IP geolocation if we don't have a location yet
+      if (!userLocationRef.current) {
+        fetch('https://ipapi.co/json/')
+          .then(res => res.json())
+          .then(data => {
+            if (data.latitude && data.longitude && !userLocationRef.current) {
+              const ipLoc: [number, number] = [data.latitude, data.longitude];
+              setUserLocation(ipLoc);
+              userLocationRef.current = ipLoc;
+              setLocationStatus('approximate');
+              setLocationAccuracy(50000);
+              locationAccuracyRef.current = 50000;
+            }
+          })
+          .catch(err => console.error("IP geolocation fallback failed:", err));
       }
     };
 
@@ -307,9 +356,6 @@ const App: React.FC = () => {
     // Check permissions and request if needed
     if (navigator.permissions && navigator.permissions.query) {
       navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((result) => {
-        if (result.state === 'prompt') {
-          requestLocationPermission();
-        }
         result.onchange = () => {
           if (result.state === 'granted') {
             requestLocationPermission();
@@ -319,9 +365,6 @@ const App: React.FC = () => {
           }
         };
       });
-    } else if (locationStatus === 'denied' || locationStatus === 'error' || locationStatus === 'searching') {
-      // Fallback for browsers without Permissions API
-      requestLocationPermission();
     }
 
     return () => navigator.geolocation.clearWatch(watchId);
