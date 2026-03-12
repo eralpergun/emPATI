@@ -111,7 +111,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
   const markerIcons = useMemo(() => {
     const states = { 
       fresh: '#10b981', // Green
-      warning: '#f97316', // Orange
+      warning: '#facc15', // Yellow
       stale: '#ef4444', // Red
       expired: '#64748b' // Gray/Slate for very old
     };
@@ -418,7 +418,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
             const hoursElapsed = (Date.now() - marker.timestamp) / (1000 * 60 * 60);
             let status: 'fresh' | 'warning' | 'stale' | 'expired' = 'fresh';
             
-            if (hoursElapsed < 6) status = 'fresh';
+            if (hoursElapsed < 4) status = 'fresh';
             else if (hoursElapsed < 12) status = 'warning';
             else if (hoursElapsed < 24) status = 'stale';
             else status = 'expired';
@@ -429,7 +429,7 @@ const MapView: React.FC<MapViewProps> = ({ markers, userLocation, locationAccura
             
             const statusColors = {
               fresh: 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
-              warning: 'bg-orange-500 shadow-[0_0_10px_#f97316]',
+              warning: 'bg-yellow-400 shadow-[0_0_10px_#facc15]',
               stale: 'bg-red-500 shadow-[0_0_10px_#ef4444]',
               expired: 'bg-slate-500 shadow-[0_0_10px_#64748b]'
             };
