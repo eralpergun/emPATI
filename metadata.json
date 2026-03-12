@@ -1,6 +1,6 @@
 {
-  "name": "Empati - Sokak Kedilerini Besleme Platformu",
-  "description": "Sokak kedilerini beslediğiniz yerleri harita üzerinde işaretleyerek diğer kullanıcılarla paylaşın. Mamaların tazelik durumunu renklerle takip edin.",
+  "name": "Empati - Street Cat Feeding Platform",
+  "description": "Share the places where you feed street cats by marking them on the map. Track the freshness of the food with colors.",
   "requestFramePermissions": [
     "geolocation"
   ]

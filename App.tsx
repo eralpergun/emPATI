@@ -63,7 +63,7 @@ const App: React.FC = () => {
   }, []);
   const [useHighAccuracy, setUseHighAccuracy] = useState(true);
   const [locationErrorCount, setLocationErrorCount] = useState(0);
-  const [language, setLanguage] = useState<LanguageCode>('tr');
+  const [language, setLanguage] = useState<LanguageCode>('en');
   const [notificationSetting, setNotificationSetting] = useState<NotificationSetting>(() => {
     return (localStorage.getItem('empati_notif_setting') as NotificationSetting) || 'mine';
   });
@@ -87,7 +87,7 @@ const App: React.FC = () => {
     isOpen: false,
     title: '',
     message: '',
-    confirmText: 'Tamam',
+    confirmText: 'OK',
     onConfirm: () => {},
   });
 
@@ -96,7 +96,7 @@ const App: React.FC = () => {
       isOpen: true,
       title,
       message,
-      confirmText: 'Tamam',
+      confirmText: 'OK',
       type,
       onConfirm: () => {
         setAlertConfig(prev => ({ ...prev, isOpen: false }));
@@ -110,8 +110,8 @@ const App: React.FC = () => {
       isOpen: true,
       title,
       message,
-      confirmText: 'Evet',
-      cancelText: 'Hayır',
+      confirmText: 'Yes',
+      cancelText: 'No',
       type,
       onConfirm: () => {
         setAlertConfig(prev => ({ ...prev, isOpen: false }));

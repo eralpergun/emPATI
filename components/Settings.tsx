@@ -164,10 +164,10 @@ const Settings: React.FC<SettingsProps> = ({
       setNewAdminIsSuper(false);
       setShowAdminForm(false);
       fetchAdmins();
-      showAlert("Başarılı", "Yeni yönetici başarıyla eklendi.", 'success');
+      showAlert("Success", "New administrator added successfully.", 'success');
     } catch (error) {
       console.error("Error adding admin:", error);
-      showAlert("Hata", "Yönetici eklenirken bir hata oluştu.", 'danger');
+      showAlert("Error", "An error occurred while adding the administrator.", 'danger');
     }
   };
 
@@ -177,15 +177,15 @@ const Settings: React.FC<SettingsProps> = ({
     // Find the admin to check if it's a super admin
     const adminToDelete = admins.find(a => a.id === id);
     if (adminToDelete?.isSuperAdmin) {
-      showAlert("Hata", "Süper yönetici hesabı silinemez.", 'danger');
+      showAlert("Error", "Super administrator account cannot be deleted.", 'danger');
       return;
     }
 
     setModalConfig({
       isOpen: true,
-      title: 'Yöneticiyi Sil',
-      message: `Bu yöneticiyi silmek istediğinize emin misiniz?`,
-      confirmText: 'Evet, Sil',
+      title: 'Delete Administrator',
+      message: `Are you sure you want to delete this administrator?`,
+      confirmText: 'Yes, Delete',
       type: 'danger',
       onConfirm: async () => {
         try {
@@ -320,13 +320,13 @@ const Settings: React.FC<SettingsProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 ml-1">
               <Users size={20} className="text-indigo-600" />
-              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Kullanıcı Yönetimi</h3>
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">User Management</h3>
             </div>
             <button 
               onClick={fetchUsers}
               className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
             >
-              Yenile
+              Refresh
             </button>
           </div>
 
@@ -334,7 +334,7 @@ const Settings: React.FC<SettingsProps> = ({
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text"
-              placeholder="Kullanıcı ara..."
+              placeholder="Search users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border-2 border-slate-100 focus:border-indigo-500 transition-all outline-none font-medium"
@@ -345,7 +345,7 @@ const Settings: React.FC<SettingsProps> = ({
             {loading ? (
               <div className="text-center py-8">
                 <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Yükleniyor...</p>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Loading...</p>
               </div>
             ) : paginatedUsers.length > 0 ? (
               <>
@@ -359,7 +359,7 @@ const Settings: React.FC<SettingsProps> = ({
                         <div>
                           <p className="font-black text-slate-900 leading-none">{u.username}</p>
                           <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
-                            {new Date(u.createdAt).toLocaleDateString()} tarihinde katıldı
+                            Joined on {new Date(u.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -373,7 +373,7 @@ const Settings: React.FC<SettingsProps> = ({
 
                     <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Şifre:</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Password:</span>
                         <span className="font-mono font-bold text-slate-700">
                           ••••••••
                         </span>
@@ -383,7 +383,7 @@ const Settings: React.FC<SettingsProps> = ({
                           onClick={() => onLoginAsUser(u.username)}
                           className="px-3 py-1.5 bg-indigo-100 text-indigo-600 hover:bg-indigo-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
                         >
-                          Giriş Yap
+                          Login
                         </button>
                       )}
                     </div>
@@ -397,7 +397,7 @@ const Settings: React.FC<SettingsProps> = ({
                       disabled={currentPage === 1}
                       className="px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold disabled:opacity-50"
                     >
-                      Önceki
+                      Previous
                     </button>
                     <span className="text-xs font-bold text-slate-600">
                       {currentPage} / {totalPages}
@@ -407,14 +407,14 @@ const Settings: React.FC<SettingsProps> = ({
                       disabled={currentPage === totalPages}
                       className="px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold disabled:opacity-50"
                     >
-                      Sonraki
+                      Next
                     </button>
                   </div>
                 )}
               </>
             ) : (
               <div className="text-center py-8 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
-                <p className="text-sm text-slate-400 font-medium">Kullanıcı bulunamadı.</p>
+                <p className="text-sm text-slate-400 font-medium">No users found.</p>
               </div>
             )}
           </div>
@@ -426,9 +426,9 @@ const Settings: React.FC<SettingsProps> = ({
         <div className="space-y-6 pt-8 border-t border-slate-100">
           <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-black text-slate-900 leading-none">Mama Eklemeyi Kapat/Aç</h3>
+              <h3 className="text-sm font-black text-slate-900 leading-none">Toggle Food Adding</h3>
               <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">
-                Tüm kullanıcılar için mama ekleme özelliğini yönetin
+                Manage food adding feature for all users
               </p>
             </div>
             <button 
@@ -441,9 +441,9 @@ const Settings: React.FC<SettingsProps> = ({
 
           <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-black text-slate-900 leading-none">Admin Mama Eklemeyi Kapat/Aç</h3>
+              <h3 className="text-sm font-black text-slate-900 leading-none">Toggle Admin Food Adding</h3>
               <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">
-                Normal yöneticilerin mama ekleme yetkisini yönetin (Süper Adminler hariç)
+                Manage food adding permission for normal administrators (except Super Admins)
               </p>
             </div>
             <button 
@@ -456,9 +456,9 @@ const Settings: React.FC<SettingsProps> = ({
 
           <div className="bg-indigo-50 p-6 rounded-[2rem] border border-indigo-100 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-black text-slate-900 leading-none">Hesap Oluşturmayı Kapat/Aç</h3>
+              <h3 className="text-sm font-black text-slate-900 leading-none">Toggle Account Creation</h3>
               <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">
-                Yeni kullanıcı kayıtlarını yönetin
+                Manage new user registrations
               </p>
             </div>
             <button 
@@ -472,20 +472,20 @@ const Settings: React.FC<SettingsProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 ml-1">
               <ShieldAlert size={20} className="text-orange-600" />
-              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Yönetici Yönetimi</h3>
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Administrator Management</h3>
             </div>
             <div className="flex items-center gap-3">
               <button 
                 onClick={fetchAdmins}
                 className="text-xs font-bold text-orange-600 hover:text-orange-800 transition-colors"
               >
-                Yenile
+                Refresh
               </button>
               <button 
                 onClick={() => setShowAdminForm(!showAdminForm)}
                 className="bg-orange-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-orange-600 transition-colors"
               >
-                {showAdminForm ? 'İptal' : 'Yönetici Ekle'}
+                {showAdminForm ? 'Cancel' : 'Add Administrator'}
               </button>
             </div>
           </div>
@@ -494,7 +494,7 @@ const Settings: React.FC<SettingsProps> = ({
             <form onSubmit={handleAddAdmin} className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
               <input 
                 type="text"
-                placeholder="Yönetici Adı Soyadı"
+                placeholder="Administrator Full Name"
                 value={newAdminName}
                 onChange={(e) => setNewAdminName(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-white border border-orange-200 focus:border-orange-500 outline-none font-bold"
@@ -502,7 +502,7 @@ const Settings: React.FC<SettingsProps> = ({
               />
               <input 
                 type="text"
-                placeholder="Yönetici Kullanıcı Adı"
+                placeholder="Administrator Username"
                 value={newAdminUsername}
                 onChange={(e) => setNewAdminUsername(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-white border border-orange-200 focus:border-orange-500 outline-none font-bold"
@@ -510,7 +510,7 @@ const Settings: React.FC<SettingsProps> = ({
               />
               <input 
                 type="text"
-                placeholder="Giriş Şifresi (Key)"
+                placeholder="Login Password (Key)"
                 value={newAdminKey}
                 onChange={(e) => setNewAdminKey(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-white border border-orange-200 focus:border-orange-500 outline-none font-bold"
@@ -523,13 +523,13 @@ const Settings: React.FC<SettingsProps> = ({
                   onChange={(e) => setNewAdminIsSuper(e.target.checked)}
                   className="w-5 h-5 rounded border-orange-300 text-orange-600 focus:ring-orange-500"
                 />
-                Süper Admin Yap
+                Make Super Admin
               </label>
               <button 
                 type="submit"
                 className="w-full bg-orange-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-orange-200"
               >
-                Kaydet
+                Save
               </button>
             </form>
           )}
@@ -538,7 +538,7 @@ const Settings: React.FC<SettingsProps> = ({
             {loadingAdmins ? (
               <div className="text-center py-8">
                 <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Yükleniyor...</p>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Loading...</p>
               </div>
             ) : admins.length > 0 ? (
               admins.map((admin) => (
@@ -550,7 +550,7 @@ const Settings: React.FC<SettingsProps> = ({
                     <div>
                       <p className="font-black text-slate-900 leading-none">{admin.name}</p>
                       <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
-                        Kullanıcı Adı: {admin.username} • Şifre: {admin.password} {admin.isSuperAdmin && '• SÜPER ADMIN'}
+                        Username: {admin.username} • Password: {admin.password} {admin.isSuperAdmin && '• SUPER ADMIN'}
                       </p>
                     </div>
                   </div>
@@ -564,7 +564,7 @@ const Settings: React.FC<SettingsProps> = ({
               ))
             ) : (
               <div className="text-center py-8 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
-                <p className="text-sm text-slate-400 font-medium">Yönetici bulunamadı.</p>
+                <p className="text-sm text-slate-400 font-medium">No administrators found.</p>
               </div>
             )}
           </div>
@@ -575,14 +575,14 @@ const Settings: React.FC<SettingsProps> = ({
         <div className="space-y-4 pt-8 border-t border-slate-100">
            <div className="flex items-center gap-2 mb-2 ml-1">
             <Trash2 size={18} className="text-red-500" />
-            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Hesap İşlemleri</h3>
+            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Account Actions</h3>
           </div>
           
           <button
             onClick={() => onDeleteAccount(userName)}
             className="w-full flex items-center justify-between p-5 rounded-3xl border-2 border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-200 transition-all font-bold"
           >
-            <span>Hesabımı Sil</span>
+            <span>Delete My Account</span>
             <Trash2 size={20} />
           </button>
         </div>
@@ -593,7 +593,7 @@ const Settings: React.FC<SettingsProps> = ({
         title={modalConfig.title}
         message={modalConfig.message}
         confirmText={modalConfig.confirmText}
-        cancelText="İptal"
+        cancelText="Cancel"
         onConfirm={modalConfig.onConfirm}
         onCancel={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
         type={modalConfig.type}

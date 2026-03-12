@@ -54,13 +54,13 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
     setLoading(true);
 
     if (!username.trim() || !password.trim()) {
-      setError('Kullanıcı adı ve şifre gereklidir.');
+      setError('Username and password are required.');
       setLoading(false);
       return;
     }
 
     if (mode === 'register' && password !== confirmPassword) {
-      setError('Şifreler eşleşmiyor.');
+      setError('Passwords do not match.');
       setLoading(false);
       return;
     }
@@ -85,7 +85,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
           });
           return;
         } else {
-          setError('Hatalı şifre.');
+          setError('Incorrect password.');
           setLoading(false);
           return;
         }
@@ -96,12 +96,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
 
       if (mode === 'register') {
         if (!registrationEnabled) {
-          setError('Yeni hesap oluşturma şu an kapalıdır.');
+          setError('New account creation is currently disabled.');
           setLoading(false);
           return;
         }
         if (snapshot.exists()) {
-          setError('Bu kullanıcı adı zaten alınmış.');
+          setError('This username is already taken.');
         } else {
           const hashedPassword = await hashPassword(password);
           await set(userRef, {
@@ -120,15 +120,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
             await set(ref(db, `users/${safeUsername}/lastActivity`), Date.now());
             onLogin({ name: username.trim(), username: safeUsername });
           } else {
-            setError('Hatalı şifre.');
+            setError('Incorrect password.');
           }
         } else {
-          setError('Kullanıcı bulunamadı.');
+          setError('User not found.');
         }
       }
     } catch (err) {
       console.error("Auth error:", err);
-      setError('Bir hata oluştu. Lütfen tekrar deneyin.');
+      setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -146,16 +146,16 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
             <Logo size="100%" />
           </div>
           <h1 className="text-4xl sm:text-5xl font-black text-[#654e96] mb-1 tracking-tighter">emPATİ</h1>
-          <p className="text-orange-600 font-black text-[10px] sm:text-sm uppercase tracking-[0.2em] mb-2 sm:mb-4">İyiliği Haritaya İşle!</p>
+          <p className="text-orange-600 font-black text-[10px] sm:text-sm uppercase tracking-[0.2em] mb-2 sm:mb-4">Mark Kindness on the Map!</p>
           <p className="text-slate-500 text-base sm:text-lg font-medium">
-            {mode === 'register' ? 'Hesap Oluştur' : t.loginTitle}
+            {mode === 'register' ? 'Create Account' : t.loginTitle}
           </p>
         </div>
 
         <div className="bg-white p-6 sm:p-8 rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl border border-slate-100 space-y-5 sm:space-y-6">
           {!registrationEnabled && (
             <div className="bg-orange-50 text-orange-700 p-4 rounded-[1.5rem] text-center font-bold text-sm">
-              Hesap oluşturma kapalıdır.
+              Account creation is disabled.
             </div>
           )}
           <form onSubmit={handleUserAuth} className="space-y-4">
@@ -166,7 +166,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Kullanıcı Adı"
+                  placeholder="Username"
                   className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold"
                 />
               </div>
@@ -177,7 +177,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Şifre"
+                  placeholder="Password"
                   className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold pr-14"
                 />
                 <button
@@ -196,7 +196,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Şifreyi Onayla"
+                    placeholder="Confirm Password"
                     className="w-full px-6 py-4 sm:py-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all outline-none text-slate-800 font-bold pr-14"
                   />
                 </div>
@@ -209,7 +209,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
               disabled={loading || !username || !password || (mode === 'register' && !confirmPassword)}
               className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-4 sm:py-5 rounded-[1.5rem] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 group text-lg"
             >
-              {loading ? 'İşleniyor...' : (mode === 'register' ? 'Kayıt Ol' : 'Giriş Yap')}
+              {loading ? 'Processing...' : (mode === 'register' ? 'Register' : 'Login')}
               <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </form>
@@ -231,12 +231,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
                 {mode === 'login' ? (
                   <>
                     <UserPlus size={18} />
-                    Hesap Oluştur
+                    Create Account
                   </>
                 ) : (
                   <>
                     <LogIn size={18} />
-                    Giriş Yap
+                    Login
                   </>
                 )}
               </button>
