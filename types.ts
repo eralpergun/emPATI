@@ -4,6 +4,7 @@ export interface User {
   username?: string;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  isEmpatiPlus?: boolean;
   adminKey?: string;
 }
 

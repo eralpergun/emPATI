@@ -43,6 +43,7 @@ interface UserData {
   password?: string;
   createdAt: number;
   lastActivity: number;
+  isEmpatiPlus?: boolean;
 }
 
 const languages: Language[] = [
@@ -220,6 +221,19 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
+  const toggleEmpatiPlus = async (username: string, currentStatus: boolean) => {
+    if (!db) return;
+    try {
+      const userRef = ref(db, `users/${username}`);
+      await update(userRef, { isEmpatiPlus: !currentStatus });
+      fetchUsers();
+      showAlert("Başarılı", `Kullanıcının emPATİ+ durumu güncellendi.`, "success");
+    } catch (error) {
+      console.error("Error toggling emPATİ+ status:", error);
+      showAlert("Hata", "emPATİ+ durumu güncellenirken bir hata oluştu.", "danger");
+    }
+  };
+
   const togglePasswordVisibility = (username: string) => {
     setShowPasswords(prev => ({
       ...prev,
@@ -357,18 +371,33 @@ const Settings: React.FC<SettingsProps> = ({
                           <ShieldAlert size={20} />
                         </div>
                         <div>
-                          <p className="font-black text-slate-900 leading-none">{u.username}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-black text-slate-900 leading-none">{u.username}</p>
+                            {u.isEmpatiPlus && (
+                              <span className="px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black rounded-full uppercase tracking-wider">
+                                emPATİ+
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
                             Katılma tarihi: {new Date(u.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => onDeleteAccount(u.username)}
-                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                      >
-                        <Trash2 size={20} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => toggleEmpatiPlus(u.username, !!u.isEmpatiPlus)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${u.isEmpatiPlus ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
+                          {u.isEmpatiPlus ? "Üyeliği İptal Et" : "emPATİ+ Yap"}
+                        </button>
+                        <button 
+                          onClick={() => onDeleteAccount(u.username)}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">

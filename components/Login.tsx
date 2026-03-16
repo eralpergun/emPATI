@@ -107,9 +107,10 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
           await set(userRef, {
             password: hashedPassword,
             createdAt: Date.now(),
-            lastActivity: Date.now()
+            lastActivity: Date.now(),
+            isEmpatiPlus: false
           });
-          onLogin({ name: username.trim(), username: safeUsername });
+          onLogin({ name: username.trim(), username: safeUsername, isEmpatiPlus: false });
         }
       } else {
         if (snapshot.exists()) {
@@ -118,7 +119,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, currentLang, registrationEnabled
           if (isMatch || userData.password === password) {
             // Update last activity
             await set(ref(db, `users/${safeUsername}/lastActivity`), Date.now());
-            onLogin({ name: username.trim(), username: safeUsername });
+            onLogin({ 
+              name: username.trim(), 
+              username: safeUsername,
+              isEmpatiPlus: userData.isEmpatiPlus 
+            });
           } else {
             setError('Hatalı şifre.');
           }

@@ -23,6 +23,7 @@ interface MenuProps {
   currentLang: LanguageCode;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  isEmpatiPlus?: boolean;
   onDeleteAll?: () => void;
   showAlert: (title: string, message: string, type?: 'danger' | 'warning' | 'info' | 'success', onConfirm?: () => void) => void;
   showConfirm: (title: string, message: string, onConfirm: () => void, type?: 'danger' | 'warning' | 'info') => void;
@@ -33,7 +34,7 @@ const locales: Record<LanguageCode, any> = {
   tr, en: enUS, it, fr, de, es, pt, ru, jp: ja, ar: arSA
 };
 
-const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, userName, currentLang, isAdmin, isSuperAdmin, onDeleteAll, showAlert, showConfirm, onRequestLocation }) => {
+const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, userName, currentLang, isAdmin, isSuperAdmin, isEmpatiPlus, onDeleteAll, showAlert, showConfirm, onRequestLocation }) => {
   const t = translations[currentLang];
   const locale = locales[currentLang] || tr;
 
@@ -55,7 +56,14 @@ const Menu: React.FC<MenuProps> = ({ stats, markers, onOpenMap, onOpenSettings, 
     <div className="p-6 max-w-2xl mx-auto space-y-6 h-full overflow-y-auto pb-40">
       <div className="flex justify-between items-start mt-4">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">{t.welcome}, {userName}! 👋</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">{t.welcome}, {userName}! 👋</h2>
+            {isEmpatiPlus && (
+              <span className="px-2 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-sm">
+                emPATİ+
+              </span>
+            )}
+          </div>
           <p className="text-slate-500 mt-1 font-medium">{t.summary}</p>
         </div>
       </div>

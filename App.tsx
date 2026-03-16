@@ -539,8 +539,17 @@ const App: React.FC = () => {
     const adminRef = ref(db, `admins/${safeUsername}`);
     
     const unsubscribeUser = onValue(userRef, (snapshot) => {
-      if (!user.isAdmin && user.username && !snapshot.exists()) {
-        showAlert("Bilgi", "Hesabınız silindi.", 'info', handleLogout);
+      if (!user.isAdmin && user.username) {
+        if (!snapshot.exists()) {
+          showAlert("Bilgi", "Hesabınız silindi.", 'info', handleLogout);
+        } else {
+          const userData = snapshot.val();
+          if (userData.isEmpatiPlus !== user.isEmpatiPlus) {
+            const updatedUser = { ...user, isEmpatiPlus: userData.isEmpatiPlus };
+            setUser(updatedUser);
+            localStorage.setItem('empati_user', JSON.stringify(updatedUser));
+          }
+        }
       }
     });
 
@@ -597,6 +606,14 @@ const App: React.FC = () => {
 
   const addMarker = async (lat: number, lng: number, type: 'cat' | 'dog' | 'both') => {
     if (!user) return;
+
+    if (!user.isAdmin && !user.isSuperAdmin && !user.isEmpatiPlus) {
+      const userMarkerCount = markers.filter(m => m.addedBy === user.name).length;
+      if (userMarkerCount >= 10) {
+        showAlert("Limit Aşıldı", "Sıradan üyeler en fazla 10 mama noktası ekleyebilir. Sınırsız eklemek için emPATİ+ üyesi olmalısınız.", "warning");
+        return;
+      }
+    }
 
     const proceedAddMarker = async () => {
       const newMarker: Omit<FoodMarker, 'id'> = {
@@ -807,6 +824,7 @@ const App: React.FC = () => {
                 currentLang={language} 
                 isAdmin={user?.isAdmin}
                 isSuperAdmin={user?.isSuperAdmin}
+                isEmpatiPlus={user?.isEmpatiPlus}
                 onDeleteAll={handleDeleteAllMarkers}
                 showAlert={showAlert}
                 showConfirm={showConfirm}
